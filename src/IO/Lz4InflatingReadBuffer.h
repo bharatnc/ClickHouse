@@ -26,8 +26,17 @@ public:
 
 private:
     bool nextImpl() override;
-
     std::unique_ptr<ReadBuffer> in;
+
+
+    bool eof = false;
+    std::shared_ptr<const char *> input;
+    size_t in_size;
+    size_t in_pos;
+
+    std::shared_ptr<char *> output;
+    size_t out_size;
+    size_t out_pos;
 };
 
 }
