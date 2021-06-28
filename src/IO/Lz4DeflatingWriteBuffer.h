@@ -8,6 +8,7 @@
 
 namespace DB
 {
+
 /// Performs compression using lz4 library and writes compressed data to out_ WriteBuffer.
 class Lz4DeflatingWriteBuffer : public BufferWithOwnMemory<WriteBuffer>
 {
@@ -30,14 +31,14 @@ private:
     void finishImpl();
 
     std::unique_ptr<WriteBuffer> out;
+    LZ4_stream_t * lz4_stream;
 
-    std::shared_ptr<const char *> input;
-    size_t in_size;
-    size_t in_pos;
+    const char * src;
+    size_t src_size;
 
-    std::shared_ptr<char *> output;
-    size_t out_size;
-    size_t out_pos;
+    char * dst;
+    size_t dst_size;
+
     bool finished = false;
 };
 }
