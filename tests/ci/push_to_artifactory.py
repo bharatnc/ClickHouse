@@ -44,6 +44,8 @@ class Packages:
             for name, arch in self.packages
         )
 
+        self.tgz = tuple("{}-{}.tgz".format(name, version) for name, _ in self.packages)
+
     def arch(self, deb_pkg: str) -> str:
         if deb_pkg not in self.deb:
             raise ValueError("{} not in {}".format(deb_pkg, self.deb))
@@ -95,6 +97,10 @@ class S3:
 
     def download_rpm(self):
         for package in self.packages.rpm:
+            self.download_package(package)
+
+    def download_tgz(self):
+        for package in self.packages.tgz:
             self.download_package(package)
 
 
@@ -217,18 +223,34 @@ def parse_args() -> argparse.Namespace:
         "will be converted to lower case with spaces->underscore",
     )
     parser.add_argument(
+        "--all", action="store_true", help="implies all deb, rpm and tgz"
+    )
+    parser.add_argument(
         "--deb", action="store_true", help="if Debian packages should be processed"
     )
     parser.add_argument(
         "--rpm", action="store_true", help="if RPM packages should be processed"
     )
     parser.add_argument(
+        "--tgz",
+        action="store_true",
+        help="if tgz archives should be processed. They aren't pushed to artifactory",
+    )
+    parser.add_argument(
         "--artifactory-url", default="https://clickhousedb.jfrog.io/artifactory"
+    )
+    parser.add_argument(
+        "-n",
+        "--no-artifactory",
+        action="store_true",
+        help="do not push packages to artifactory",
     )
 
     args = parser.parse_args()
-    if not args.deb and not args.rpm:
-        parser.error("at least one of --deb and --rpm should be specified")
+    if args.all:
+        args.deb = args.rpm = args.tgz = True
+    if not (args.deb or args.rpm or args.tgz):
+        parser.error("at least one of --deb, --rpm or --tgz should be specified")
     args.check_name = args.check_name.lower().replace(" ", "_")
     if args.pull_request == 0:
         args.pull_request = ".".join(args.release.version_parts[:2])
@@ -245,13 +267,21 @@ def main():
         args.check_name,
         args.release.version,
     )
-    art_client = Artifactory(args.artifactory_url, args.release.type)
+    if not args.no_artifactory:
+        art_client = Artifactory(args.artifactory_url, args.release.type)
+
     if args.deb:
         s3.download_deb()
-        art_client.deploy_deb(s3.packages)
     if args.rpm:
         s3.download_rpm()
-        art_client.deploy_rpm(s3.packages)
+    if args.tgz:
+        s3.download_tgz()
+
+    if not args.no_artifactory:
+        if args.deb:
+            art_client.deploy_deb(s3.packages)
+        if args.rpm:
+            art_client.deploy_rpm(s3.packages)
 
 
 if __name__ == "__main__":
