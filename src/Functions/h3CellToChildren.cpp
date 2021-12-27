@@ -31,12 +31,12 @@ namespace ErrorCodes
 namespace
 {
 
-class FunctionH3ToChildren : public IFunction
+class FunctionH3CellToChildren : public IFunction
 {
 public:
-    static constexpr auto name = "h3ToChildren";
+    static constexpr auto name = "h3CellToChildren";
 
-    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionH3ToChildren>(); }
+    static FunctionPtr create(ContextPtr) { return std::make_shared<FunctionH3CellToChildren>(); }
 
     std::string getName() const override { return name; }
 
@@ -115,9 +115,10 @@ public:
 
 }
 
-void registerFunctionH3ToChildren(FunctionFactory & factory)
+void registerFunctionH3CellToChildren(FunctionFactory & factory)
 {
-    factory.registerFunction<FunctionH3ToChildren>();
+    factory.registerFunction<FunctionH3CellToChildren>();
+    factory.registerAlias("h3ToChildren", FunctionH3CellToChildren::name);
 }
 
 }
