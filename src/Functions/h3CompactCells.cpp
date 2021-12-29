@@ -4,6 +4,7 @@
 
 #include <Columns/ColumnArray.h>
 #include <Columns/ColumnTuple.h>
+#include <Columns/ColumnVector.h>
 #include <Columns/ColumnsNumber.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/IFunction.h>
@@ -11,6 +12,7 @@
 #include <DataTypes/DataTypeTuple.h>
 #include <DataTypes/DataTypesNumber.h>
 #include <Functions/FunctionHelpers.h>
+
 
 #include <h3api.h>
 #include <constants.h>
@@ -80,6 +82,12 @@ public:
         const auto * col_h3_indices = arguments[0].column.get();
         const auto * col_num_cells = arguments[1].column.get();
 
+        // input data
+        const ColumnArray * array = typeid_cast<const ColumnArray *>(arguments[0].column.get());
+        const ColumnPtr & mapped = array->getDataPtr();
+        const ColumnArray::Offsets & offsets = array->getOffsets();
+        const ColumnVector<UInt64> * column = checkAndGetColumn<ColumnVector<UInt64>>(&*mapped);
+
         auto dst = ColumnArray::create(ColumnUInt64::create());
         auto & dst_data = dst->getData();
         auto & dst_offsets = dst->getOffsets();
@@ -88,9 +96,17 @@ public:
         auto current_offset = 0;
         std::vector<H3Index> h3_compacted_indices_vec;
 
-        for (size_t row = 0; row < input_rows_count; ++row)
+        std::cerr << ">>>>>> OUT IS" << col_h3_indices->dumpStructure() << std::endl;
+
+        for (size_t row = 0; row < input_rows_count; row++)
         {
-            const auto uncompacted_indices = checkAndGetColumn<ColumnArray>(col_h3_indices[row]);
+            const auto  * input_data =  reinterpret_cast<const H3Index *>(column->getDataAt(row).data);
+
+//            const H3Index * uncompacted_indices = reinterpret_cast<const H3Index *>(col_h3_indices->getDataAt(row).data);
+            const H3Index * uncompacted_indices = input_data;
+            for (size_t i = 0; i < offsets.size(); ++i) {
+                std::cerr << ">>>>>> GIVEN INP"<< input_data << std::endl;
+            }
             const auto num_cells = col_num_cells->getUInt(row);
 
             size_t hex_count = maxGridDiskSize(num_cells);
@@ -100,13 +116,13 @@ public:
                     ErrorCodes::TOO_LARGE_ARRAY_SIZE,
                     "The result of function {} (array of {} elements) will be too large with resolution argument = {}",
                     getName(),
-                    toString(uncompacted_indices->size()),
-                    toString(uncompacted_indices));
+                    toString(uncompacted_indices),
+                    toString(col_h3_indices->getDataAt(row).size));
 
             h3_compacted_indices_vec.resize(hex_count);
-            std::cerr << "[INDEX]" << toString(uncompacted_indices) << std::endl;
+            std::cerr << "[INDEX size is]" << toString(col_h3_indices->getDataAt(row).size) << std::endl;
             auto error_code
-                = compactCells(reinterpret_cast<const H3Index *>(uncompacted_indices), h3_compacted_indices_vec.data(), hex_count);
+                = compactCells(input_data, h3_compacted_indices_vec.data(), hex_count);
             if (error_code != E_SUCCESS)
                 throw "Error";
 
@@ -116,10 +132,11 @@ public:
             {
                 if (hindex != 0)
                 {
-                    current_offset++;
+                    ++current_offset;
                     dst_data.insert(hindex);
                 }
             }
+
             dst_offsets[row] = current_offset;
             h3_compacted_indices_vec.clear();
         }
