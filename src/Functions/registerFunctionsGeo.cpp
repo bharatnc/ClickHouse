@@ -37,6 +37,7 @@ void registerFunctionH3GetBaseCell(FunctionFactory &);
 void registerFunctionH3CellToParent(FunctionFactory &);
 void registerFunctionH3CellToCenterChild(FunctionFactory &);
 void registerFunctionH3CellToChildren(FunctionFactory &);
+void registerFunctionH3CompactCells(FunctionFactory &);
 void registerFunctionH3IndexesAreNeighbors(FunctionFactory &);
 void registerFunctionStringToH3(FunctionFactory &);
 void registerFunctionH3ToString(FunctionFactory &);
@@ -94,6 +95,7 @@ void registerFunctionsGeo(FunctionFactory & factory)
     registerFunctionH3CellToParent(factory);
     registerFunctionH3CellToChildren(factory);
     registerFunctionH3CellToCenterChild(factory);
+    registerFunctionH3CompactCells(factory);
     registerFunctionH3IndexesAreNeighbors(factory);
     registerFunctionStringToH3(factory);
     registerFunctionH3ToString(factory);
