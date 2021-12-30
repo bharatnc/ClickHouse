@@ -2,19 +2,14 @@
 
 import pytest
 from helpers.cluster import ClickHouseCluster
-import random
-import string
-import os
 import time
-from multiprocessing.dummy import Pool
 from helpers.network import PartitionManager
-from helpers.test_tools import assert_eq_with_retry
 
 cluster = ClickHouseCluster(__file__)
 node1 = cluster.add_instance('node1', main_configs=['configs/enable_keeper1.xml', 'configs/use_keeper.xml'], stay_alive=True)
 node2 = cluster.add_instance('node2', main_configs=['configs/enable_keeper2.xml', 'configs/use_keeper.xml'], stay_alive=True)
 
-from kazoo.client import KazooClient, KazooState
+from kazoo.client import KazooClient
 
 @pytest.fixture(scope="module")
 def started_cluster():

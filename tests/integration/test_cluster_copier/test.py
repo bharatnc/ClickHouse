@@ -6,11 +6,9 @@ import kazoo
 import pytest
 import string
 import random
-from contextlib import contextmanager
 from helpers.cluster import ClickHouseCluster
 from helpers.test_tools import TSV
 
-import docker
 
 CURRENT_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(CURRENT_TEST_DIR))
