@@ -8,4 +8,5 @@ cd /ClickHouse/utils/check-style || echo -e "failure\tRepo not found" > /test_ou
 ./check-whitespaces -n        |& tee /test_output/whitespaces_output.txt
 ./check-duplicate-includes.sh |& tee /test_output/duplicate_output.txt
 ./shellcheck-run.sh           |& tee /test_output/shellcheck_output.txt
+./python-lint-run.sh          |& tee /test_output/python_lint_output.txt
 /process_style_check_result.py || echo -e "failure\tCannot parse results" > /test_output/check_status.tsv
