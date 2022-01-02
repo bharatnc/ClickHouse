@@ -87,7 +87,6 @@ def parallel_login(self, server, user_count=10, timeout=300):
     """Check that login of valid and invalid LDAP authenticated users works in parallel.
     """
     self.context.ldap_node = self.context.cluster.node(server)
-    user = None
 
     with Given("a group of LDAP users"):
         users = [{"cn": f"parallel_user{i}", "userpassword": randomword(20)} for i in range(user_count)]
@@ -120,7 +119,6 @@ def parallel_login_with_the_same_user(self, server, timeout=300):
     LDAP authenticated user works in parallel.
     """
     self.context.ldap_node = self.context.cluster.node(server)
-    user = None
 
     with Given("only one LDAP user"):
         users = [{"cn": f"parallel_user1", "userpassword": randomword(20)}]
@@ -313,7 +311,6 @@ def parallel_login_with_rbac_users(self, server, user_count=10, timeout=300):
     works in parallel when server configuration includes LDAP external user directory.
     """
     self.context.ldap_node = self.context.cluster.node(server)
-    user = None
 
     users = [{"cn": f"parallel_user{i}", "userpassword": randomword(20)} for i in range(user_count)]
 
@@ -858,7 +855,6 @@ def valid_verification_cooldown_value_ldap_unavailable(self, server, rbac=False)
     """
 
     error_message = "DB::Exception: testVCD: Authentication failed: password is incorrect or there is no user with such name"
-    error_exitcode = 4
     user = None
 
     with Given("I have an LDAP configuration that sets verification_cooldown parameter to 2 sec"):

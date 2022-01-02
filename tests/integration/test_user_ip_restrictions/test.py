@@ -38,21 +38,21 @@ def test_ipv4(setup_cluster):
         client_ipv4_ok.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --host 10.5.172.77 --query 'select 1'"], privileged=True,
             user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "allowed client with 10.5.172.10 cannot connect to server with allowed mask '10.5.172.0/24'"
 
     try:
         client_ipv4_ok_direct.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --host 10.5.172.77 --query 'select 1'"], privileged=True,
             user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "allowed client with 10.5.173.1 cannot connect to server with allowed ip '10.5.173.1'"
 
     try:
         client_ipv4_ok_full_mask.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --host 10.5.172.77 --query 'select 1'"], privileged=True,
             user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "allowed client with 10.5.175.77 cannot connect to server with allowed ip '10.5.175.0/255.255.255.0'"
 
     try:
@@ -79,7 +79,7 @@ def test_ipv6(setup_cluster):
         client_ipv6_ok_direct.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --host 2001:3984:3989:0:0:0:1:1000 --query 'select 1'"],
             privileged=True, user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "allowed client with 2001:3984:3989:0:0:0:1:1111 cannot connect to server with allowed ip '2001:3984:3989:0:0:0:1:1111'"
 
     try:

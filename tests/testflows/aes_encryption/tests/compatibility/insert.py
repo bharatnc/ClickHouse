@@ -117,7 +117,6 @@ def aes_encrypt_mysql_using_materialized_view(self):
     node = self.context.node
     key = f"{'1' * 64}"
     iv = f"{'2' * 64}"
-    aad = "some random aad"
 
     for mode, key_len, iv_len in mysql_modes:
         with Example(f"""mode={mode.strip("'")} key={key_len} iv={iv_len}""") as example:
@@ -159,7 +158,6 @@ def encrypt_using_input_table_function(self):
     for mode, key_len, iv_len, aad_len in modes:
         with Example(f"""mode={mode.strip("'")} iv={iv_len} aad={aad_len}""") as example:
             example_key = f"'{key[:key_len]}'"
-            example_mode = mode
             example_iv = None if not iv_len else f"'{iv[:iv_len]}'"
             example_aad = None if not aad_len else f"'{aad}'"
             example_transform = f"encrypt({mode}, secret, {example_key}{(', ' + example_iv) if example_iv else ''}{(', ' + example_aad) if example_aad else ''})"
@@ -192,12 +190,10 @@ def aes_encrypt_mysql_using_input_table_function(self):
     node = self.context.node
     key = f"{'1' * 64}"
     iv = f"{'2' * 64}"
-    aad = "some random aad"
 
     for mode, key_len, iv_len in mysql_modes:
         with Example(f"""mode={mode.strip("'")} key={key_len} iv={iv_len}""") as example:
             example_key = f"'{key[:key_len]}'"
-            example_mode = mode
             example_iv = None if not iv_len else f"'{iv[:iv_len]}'"
             example_transform = f"aes_encrypt_mysql({mode}, secret, {example_key}{(', ' + example_iv) if example_iv else ''})"
 
@@ -285,7 +281,7 @@ def aes_decrypt_mysql_using_materialized_view(self):
             example_key = f"'{key[:key_len]}'"
             example_mode = mode
             example_iv = None if not iv_len else f"'{iv[:iv_len]}'"
-            example_aad = None if not aad_len else f"'{aad}'"
+            None if not aad_len else f"'{aad}'"
             example_transform = f"aes_decrypt_mysql(mode, secret, key{', iv' if example_iv else ''})"
 
             with Given("I have ciphertexts"):
@@ -329,7 +325,6 @@ def decrypt_using_input_table_function(self):
     for mode, key_len, iv_len, aad_len in modes:
         with Example(f"""mode={mode.strip("'")} iv={iv_len} aad={aad_len}""") as example:
             example_key = f"'{key[:key_len]}'"
-            example_mode = mode
             example_iv = None if not iv_len else f"'{iv[:iv_len]}'"
             example_aad = None if not aad_len else f"'{aad}'"
             example_transform = f"decrypt({mode}, unhex(secret), {example_key}{(', ' + example_iv) if example_iv else ''}{(', ' + example_aad) if example_aad else ''})"
@@ -367,7 +362,6 @@ def aes_decrypt_mysql_using_input_table_function(self):
     node = self.context.node
     key = f"{'1' * 64}"
     iv = f"{'2' * 64}"
-    aad = "some random aad"
 
     with Given("I load encrypt snapshots"):
         snapshot_module = SourceFileLoader("snapshot", os.path.join(current_dir(), "snapshots", "insert.py.insert.snapshot")).load_module()
@@ -375,7 +369,6 @@ def aes_decrypt_mysql_using_input_table_function(self):
     for mode, key_len, iv_len in mysql_modes:
         with Example(f"""mode={mode.strip("'")} key={key_len} iv={iv_len}""") as example:
             example_key = f"'{key[:key_len]}'"
-            example_mode = mode
             example_iv = None if not iv_len else f"'{iv[:iv_len]}'"
             example_transform = f"aes_decrypt_mysql({mode}, unhex(secret), {example_key}{(', ' + example_iv) if example_iv else ''})"
 

@@ -60,7 +60,7 @@ def test_write_storage_not_expired(started_cluster):
     assert select_read == "1\tMark\t72.53\n"
 
 def test_two_users(started_cluster):
-    hdfs_api = started_cluster.hdfs_api
+    started_cluster.hdfs_api
 
     node1.query("create table HDFSStorOne (id UInt32, name String, weight Float64) ENGINE = HDFS('hdfs://kerberizedhdfs1:9010/storage_user_one', 'TSV')")
     node1.query("insert into HDFSStorOne values (1, 'Real', 86.00)")

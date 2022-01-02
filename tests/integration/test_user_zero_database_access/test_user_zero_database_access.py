@@ -29,14 +29,14 @@ def test_user_zero_database_access(start_cluster):
     try:
         node.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --user 'has_access' --query 'DROP DATABASE test'"], user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "user with access rights can't drop database test"
 
     try:
         node.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --user 'has_access' --query 'CREATE DATABASE test'"],
             user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "user with access rights can't create database test"
 
     try:
@@ -62,11 +62,11 @@ def test_user_zero_database_access(start_cluster):
     try:
         node.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --user 'default' --query 'CREATE DATABASE test2'"], user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "user with full access rights can't create database test2"
 
     try:
         node.exec_in_container(
             ["bash", "-c", "/usr/bin/clickhouse client --user 'default' --query 'DROP DATABASE test2'"], user='root')
-    except Exception as ex:
+    except Exception:
         assert False, "user with full access rights can't drop database test2"

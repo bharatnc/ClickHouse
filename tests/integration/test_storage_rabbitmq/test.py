@@ -517,8 +517,7 @@ def test_rabbitmq_big_message(rabbitmq_cluster):
 
 
 def test_rabbitmq_sharding_between_queues_publish(rabbitmq_cluster):
-    NUM_CONSUMERS = 10
-    NUM_QUEUES = 10
+    pass
 
     instance.query('''
         CREATE TABLE test.rabbitmq (key UInt64, value UInt64)
@@ -586,7 +585,6 @@ def test_rabbitmq_sharding_between_queues_publish(rabbitmq_cluster):
 
 def test_rabbitmq_mv_combo(rabbitmq_cluster):
     NUM_MV = 5
-    NUM_CONSUMERS = 4
 
     instance.query('''
         CREATE TABLE test.rabbitmq (key UInt64, value UInt64)
@@ -700,7 +698,6 @@ def test_rabbitmq_insert(rabbitmq_cluster):
     insert_messages = []
 
     def onReceived(channel, method, properties, body):
-        i = 0
         insert_messages.append(body.decode())
         if (len(insert_messages) == 50):
             channel.stop_consuming()
@@ -753,7 +750,6 @@ def test_rabbitmq_insert_headers_exchange(rabbitmq_cluster):
     insert_messages = []
 
     def onReceived(channel, method, properties, body):
-        i = 0
         insert_messages.append(body.decode())
         if (len(insert_messages) == 50):
             channel.stop_consuming()
@@ -1128,7 +1124,6 @@ def test_rabbitmq_topic_exchange(rabbitmq_cluster):
             channel.basic_publish(exchange='topic_exchange_testing', routing_key=key, body=message)
 
     key = "random.logs"
-    current = 0
     for msg_id in range(messages_num):
         channel.basic_publish(exchange='topic_exchange_testing', routing_key=key,
                               properties=pika.BasicProperties(message_id=str(msg_id)), body=messages[msg_id])
@@ -1634,7 +1629,7 @@ def test_rabbitmq_restore_failed_connection_without_losses_1(rabbitmq_cluster):
     credentials = pika.PlainCredentials('root', 'clickhouse')
     parameters = pika.ConnectionParameters(rabbitmq_cluster.rabbitmq_ip, rabbitmq_cluster.rabbitmq_port, '/', credentials)
     connection = pika.BlockingConnection(parameters)
-    channel = connection.channel()
+    connection.channel()
 
     messages_num = 100000
     values = []
@@ -1965,7 +1960,7 @@ def test_rabbitmq_drop_table_properly(rabbitmq_cluster):
 
     try:
         exists = channel.queue_declare(callback, queue='rabbit_queue_drop', passive=True)
-    except Exception as e:
+    except Exception:
         exists = False
 
     assert(not exists)
@@ -2023,7 +2018,6 @@ def test_rabbitmq_queue_consume(rabbitmq_cluster):
     def produce():
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
-        messages = []
         for _ in range(messages_num):
             message = json.dumps({'key': i[0], 'value': i[0]})
             channel.basic_publish(exchange='', routing_key='rabbit_queue', body=message)
@@ -2170,7 +2164,6 @@ def test_rabbitmq_drop_mv(rabbitmq_cluster):
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
-    messages = []
     for i in range(20):
         channel.basic_publish(exchange='mv', routing_key='', body=json.dumps({'key': i, 'value': i}))
 
@@ -2207,8 +2200,6 @@ def test_rabbitmq_drop_mv(rabbitmq_cluster):
 
 
 def test_rabbitmq_random_detach(rabbitmq_cluster):
-    NUM_CONSUMERS = 2
-    NUM_QUEUES = 2
     instance.query('''
         CREATE TABLE test.rabbitmq (key UInt64, value UInt64)
             ENGINE = RabbitMQ
@@ -2225,7 +2216,6 @@ def test_rabbitmq_random_detach(rabbitmq_cluster):
             SELECT *, _channel_id AS channel_id FROM test.rabbitmq;
     ''')
 
-    i = [0]
     messages_num = 10000
 
     credentials = pika.PlainCredentials('root', 'clickhouse')

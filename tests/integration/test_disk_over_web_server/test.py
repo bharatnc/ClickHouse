@@ -14,12 +14,11 @@ def cluster():
         cluster.start()
 
         node1 = cluster.instances["node1"]
-        expected = ""
         global uuids
         for i in range(3):
             node1.query(""" CREATE TABLE data{} (id Int32) ENGINE = MergeTree() ORDER BY id SETTINGS storage_policy = 'def';""".format(i))
             node1.query("INSERT INTO data{} SELECT number FROM numbers(500000 * {})".format(i, i + 1))
-            expected = node1.query("SELECT * FROM data{} ORDER BY id".format(i))
+            node1.query("SELECT * FROM data{} ORDER BY id".format(i))
 
             metadata_path = node1.query("SELECT data_paths FROM system.tables WHERE name='data{}'".format(i))
             metadata_path = metadata_path[metadata_path.find('/'):metadata_path.rfind('/')+1]
@@ -66,7 +65,7 @@ def test_usage(cluster, node_name):
 
 
 def test_incorrect_usage(cluster):
-    node1 = cluster.instances["node1"]
+    cluster.instances["node1"]
     node2 = cluster.instances["node3"]
     global uuids
     node2.query("""

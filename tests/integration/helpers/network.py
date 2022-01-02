@@ -217,7 +217,7 @@ class _NetworkManager:
                                                                  # /run/xtables.lock passed inside for correct iptables --wait
                                                                  volumes={'/run/xtables.lock': {'bind': '/run/xtables.lock', 'mode': 'ro' }},
                                                                  detach=True, network_mode='host')
-            container_id = self._container.id
+            self._container.id
             self._container_expire_time = time.time() + self.container_expire_timeout
 
         return self._container
@@ -254,7 +254,7 @@ class NetThroughput(object):
                 try:
                     self.interface = self.node.exec_in_container(["bash", "-c", f"awk '{{print $1}}' /proc/net/route | grep 'eth{i}'"]).strip()
                     break
-                except Exception as ex:
+                except Exception:
                     print(f"No interface eth{i}")
             else:
                 raise Exception("No interface eth{1-10} and default interface not specified in /proc/net/route, maybe some special network configuration")

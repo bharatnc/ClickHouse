@@ -232,7 +232,6 @@ def invalid_key_or_iv_length_for_gcm(self, mode, key_len, iv_len, aad):
     the expected value for the GCM mode.
     """
     ciphertext = "'hello there'"
-    plaintext = "hello there"
     key = "0123456789" * 4
     iv = "0123456789" * 4
 
@@ -327,7 +326,6 @@ def key_parameter_types(self):
     """Check that `decrypt` function accepts `key` parameter as the second argument
     of either `String` or `FixedString` types.
     """
-    iv = "'0123456789123456'"
     mode = "'aes-128-cbc'"
     key = "'0123456789123456'"
 
@@ -452,7 +450,6 @@ def mismatched_key(self):
     iv = f"{'2' * 16}"
     aad = "some random aad"
     datatype = "String"
-    plaintext = "'1'"
 
     with Given("I load encrypt snapshots"):
         snapshot_module = SourceFileLoader("snapshot", os.path.join(current_dir(),
@@ -487,7 +484,6 @@ def mismatched_iv(self):
     iv = f"{'2' * 16}"
     aad = "some random aad"
     datatype = "String"
-    plaintext = "'1'"
 
     with Given("I load encrypt snapshots"):
         snapshot_module = SourceFileLoader("snapshot", os.path.join(current_dir(), "snapshots", "encrypt.py.encrypt.snapshot")).load_module()
@@ -523,7 +519,6 @@ def mismatched_aad(self):
     iv = f"{'2' * 16}"
     aad = "some random aad"
     datatype = "String"
-    plaintext = "'1'"
 
     with Given("I load encrypt snapshots"):
         snapshot_module = SourceFileLoader("snapshot", os.path.join(current_dir(), "snapshots", "encrypt.py.encrypt.snapshot")).load_module()

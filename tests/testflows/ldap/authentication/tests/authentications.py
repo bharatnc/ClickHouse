@@ -68,7 +68,6 @@ def parallel_login(self, server, user_count=10, timeout=300, rbac=False):
     """Check that login of valid and invalid LDAP authenticated users works in parallel.
     """
     self.context.ldap_node = self.context.cluster.node(server)
-    user = None
 
     users = [{"cn": f"parallel_user{i}", "userpassword": randomword(20)} for i in range(user_count)]
 
@@ -736,7 +735,6 @@ def check_verification_cooldown_reset_on_core_server_parameter_change(self, serv
     error_message = "DB::Exception: {user}: Authentication failed: password is incorrect or there is no user with such name"
     error_exitcode = 4
     user = None
-    config=None
     updated_config=None
 
     with Given("I have an LDAP configuration that sets verification_cooldown parameter to 600 sec"):
@@ -758,7 +756,7 @@ def check_verification_cooldown_reset_on_core_server_parameter_change(self, serv
         ]
 
     with And("I create LDAP servers configuration file"):
-        config = create_ldap_servers_config_content(servers, config_d_dir, config_file)
+        create_ldap_servers_config_content(servers, config_d_dir, config_file)
 
     with ldap_users(*users) as users:
         with ldap_servers(servers, restart=True):

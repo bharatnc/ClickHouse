@@ -289,14 +289,14 @@ def test_blocade_leader_twice(started_cluster):
             try:
                 node3.query("INSERT INTO ordinary.t2 SELECT rand() FROM numbers(100)")
                 assert False, "Node3 became leader?"
-            except Exception as ex:
+            except Exception:
                 time.sleep(0.5)
 
         for i in range(10):
             try:
                 node2.query("INSERT INTO ordinary.t2 SELECT rand() FROM numbers(100)")
                 assert False, "Node2 became leader?"
-            except Exception as ex:
+            except Exception:
                 time.sleep(0.5)
 
     for n, node in enumerate([node1, node2, node3]):

@@ -470,7 +470,6 @@ def _test_s3_glob_scheherazade(started_cluster):
     bucket = started_cluster.minio_bucket
     instance = started_cluster.instances["dummy"]  # type: ClickHouseInstance
     table_format = "column1 UInt32, column2 UInt32, column3 UInt32"
-    max_path = ""
     values = "(1, 1, 1)"
     nights_per_job = 1001 // 30
     jobs = []
@@ -639,7 +638,7 @@ def _test_storage_s3_get_gzip(started_cluster, extension, method):
 
 
 def _test_storage_s3_get_unstable(started_cluster):
-    bucket = started_cluster.minio_bucket
+    started_cluster.minio_bucket
     instance = started_cluster.instances["dummy"]
     table_format = "column1 Int64, column2 Int64, column3 Int64, column4 Int64"
     get_query = f"SELECT count(), sum(column3), sum(column4) FROM s3('http://resolver:8081/{started_cluster.minio_bucket}/test.csv', 'CSV', '{table_format}') FORMAT CSV"
@@ -746,7 +745,7 @@ def _test_truncate_table(started_cluster):
 
 
 def _test_predefined_connection_configuration(started_cluster):
-    bucket = started_cluster.minio_bucket
+    started_cluster.minio_bucket
     instance = started_cluster.instances["dummy"]  # type: ClickHouseInstance
     name = "test_table"
 
@@ -800,7 +799,7 @@ def _test_url_reconnect_in_the_middle(started_cluster):
 
 
 def _test_seekable_formats(started_cluster):
-    bucket = started_cluster.minio_bucket
+    started_cluster.minio_bucket
     instance = started_cluster.instances["dummy"]  # type: ClickHouseInstance
 
     table_function = f"s3(s3_parquet, structure='a Int32, b String', format='Parquet')"

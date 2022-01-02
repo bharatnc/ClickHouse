@@ -103,7 +103,7 @@ def test_predefined_connection_configuration(started_cluster):
 
 result = ''
 def test_url_reconnect(started_cluster):
-    hdfs_api = started_cluster.hdfs_api
+    started_cluster.hdfs_api
 
     with PartitionManager() as pm:
         node1.query(

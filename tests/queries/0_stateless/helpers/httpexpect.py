@@ -47,7 +47,7 @@ def reader(response, queue, kill_event):
                 break
             data = response.read(1).decode()
             queue.put(data)
-        except Exception as e:
+        except Exception:
             if kill_event.is_set():
                 break
             raise

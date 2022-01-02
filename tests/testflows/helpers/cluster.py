@@ -363,7 +363,7 @@ class Cluster(object):
         to a specific node.
         :param node: name of the service
         """
-        test = current()
+        current()
 
         current_thread = threading.current_thread()
         id = f"{current_thread.name}-{node}"

@@ -160,7 +160,6 @@ def check_order_by_when_privilege_is_granted(table, user, node):
 def check_sample_by_when_privilege_is_granted(table, user, node):
     """Ensures SAMPLE BY runs as expected when the privilege is granted to the specified user
     """
-    column = 'sample'
 
     with When(f"I add sample by clause"):
         node.query(f"ALTER TABLE {table} MODIFY SAMPLE BY b",

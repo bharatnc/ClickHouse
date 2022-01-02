@@ -830,7 +830,7 @@ def dist_table(self, node=None):
 
     if node is None:
         node = self.context.node
-        node2 = self.context.node2
+        self.context.node2
 
     try:
         with Given("I have a table on a cluster"):
@@ -922,7 +922,7 @@ def dist_table_on_dist_table(self, node=None):
 
     if node is None:
         node = self.context.node
-        node2 = self.context.node2
+        self.context.node2
 
     try:
         with Given("I have a table on a cluster"):

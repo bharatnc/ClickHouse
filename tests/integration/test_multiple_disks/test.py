@@ -822,7 +822,7 @@ def produce_alter_move(node, name):
     try:
         node1.query("ALTER TABLE {} MOVE {mt} {mp} TO {md} {mv}".format(
             name, mt=move_type, mp=move_part, md=move_disk, mv=move_volume))
-    except QueryRuntimeException as ex:
+    except QueryRuntimeException:
         pass
 
 
@@ -1257,7 +1257,6 @@ def test_kill_while_insert(start_cluster):
         """.format(name=name))
 
         data = []
-        dates = []
         for i in range(10):
             data.append(get_random_string(1024 * 1024))  # 1MB value
         node1.query("INSERT INTO {name} VALUES {}".format(','.join(["('" + s + "')" for s in data]), name=name))

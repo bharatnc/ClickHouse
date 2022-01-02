@@ -261,7 +261,6 @@ def key_parameter_types(self):
     """Check that `aes_decrypt` function accepts `key` parameter as the second argument
     of either `String` or `FixedString` types.
     """
-    iv = "'0123456789123456'"
     mode = "'aes-128-cbc'"
     key = "'0123456789123456'"
 

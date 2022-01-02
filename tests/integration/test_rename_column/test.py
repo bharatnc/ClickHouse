@@ -127,7 +127,7 @@ def insert(node, table_name, chunk=1000, col_names=None, iterations=1, ignore_ex
                         .format(table_name=table_name, chunk=chunk, col0=col_names[0], col1=col_names[1],
                                 offset=str(offset)))
             node.query(";\n".join(query))
-        except QueryRuntimeException as ex:
+        except QueryRuntimeException:
             if not ignore_exception:
                 raise
 
@@ -148,7 +148,7 @@ def select(node, table_name, col_name="num", expected_result=None, iterations=1,
                     if r != expected_result and poll and time.time() - start_time < poll:
                         continue
                     assert r == expected_result
-            except QueryRuntimeException as ex:
+            except QueryRuntimeException:
                 if not ignore_exception:
                     raise
             break
@@ -160,7 +160,7 @@ def rename_column(node, table_name, name, new_name, iterations=1, ignore_excepti
             node.query("ALTER TABLE {table_name} RENAME COLUMN {name} to {new_name}".format(
                 table_name=table_name, name=name, new_name=new_name
             ))
-        except QueryRuntimeException as ex:
+        except QueryRuntimeException:
             if not ignore_exception:
                 raise
 
@@ -171,7 +171,7 @@ def rename_column_on_cluster(node, table_name, name, new_name, iterations=1, ign
             node.query("ALTER TABLE {table_name} ON CLUSTER test_cluster RENAME COLUMN {name} to {new_name}".format(
                 table_name=table_name, name=name, new_name=new_name
             ))
-        except QueryRuntimeException as ex:
+        except QueryRuntimeException:
             if not ignore_exception:
                 raise
 
@@ -183,7 +183,7 @@ def alter_move(node, table_name, iterations=1, ignore_exception=False):
         try:
             node.query("ALTER TABLE {table_name} MOVE PARTITION '{move_part}' TO VOLUME '{move_volume}'"
                        .format(table_name=table_name, move_part=move_part, move_volume=move_volume))
-        except QueryRuntimeException as ex:
+        except QueryRuntimeException:
             if not ignore_exception:
                 raise
 
