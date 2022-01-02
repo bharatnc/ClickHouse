@@ -2,7 +2,6 @@ from helpers.cluster import run_and_check
 import pytest
 import logging
 import os
-from helpers.test_tools import TSV
 from helpers.network import _NetworkManager
 
 @pytest.fixture(autouse=True, scope="session")
@@ -27,7 +26,6 @@ def cleanup_environment():
             logging.debug(f"No running containers")
     except Exception as e:
         logging.exception(f"cleanup_environment:{str(e)}")
-        pass
 
     yield
 

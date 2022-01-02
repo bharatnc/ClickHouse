@@ -5,11 +5,8 @@ import pytest
 from helpers.network import PartitionManager
 import logging
 from helpers.client import QueryRuntimeException
-from helpers.cluster import get_docker_compose_path, run_and_check
-import random
 
 import threading
-from multiprocessing.dummy import Pool
 from helpers.test_tools import assert_eq_with_retry
 
 def check_query(clickhouse_node, query, result_set, retry_count=10, interval_seconds=3):
