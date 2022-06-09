@@ -98,13 +98,24 @@ struct QuantileApproximateWeighted
         Float64 sum_weight = 0;
         for (const auto & pair : map)
         {
+            // {value: weighted, value:weight, ... }
+            // getMapped is equivalent to map.second
+            // i.e it returns weight for a particular value
+            // SUM all the weights
             sum_weight += pair.getMapped();
+            // populate array with both actual value and weight for value.
+            // i.e, {value: weighted, value:weight, ... } etc
             array[i] = pair.getValue();
             ++i;
         }
 
+        // sort the array of values. Here a.first and b.first since it's the values
+        // a.second and b.second are the values.
         ::sort(array, array + size, [](const Pair & a, const Pair & b) { return a.first < b.first; });
 
+        // calculates threshild using weight sum * level of quantile
+        // for example {1,1,1,1} with quantile level 0.2,
+        // it's the weight sum of 4 * 0.2 = 0.8
         Float64 threshold = std::ceil(sum_weight * level);
         Float64 accumulated = 0;
 
