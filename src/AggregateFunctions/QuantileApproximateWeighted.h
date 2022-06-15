@@ -122,11 +122,28 @@ struct QuantileApproximateWeighted
         Float64 threshold = std::ceil(sum_weight * level);
         Float64 accumulated = 0;
 
+        // contains cumulative sum of weights;
+        std::vector<Weight> cum_sum_array;
+        std::vector<Weight> sample_weights;
+        std::vector<Value> values;
+
         const Pair * it = array;
         const Pair * end = array + size;
+        bool first = true;
         while (it < end)
         {
             accumulated += it->second;
+            sample_weights.push_back(it->second);
+            values.push_back(it->first);
+
+            if(first) {
+                cum_sum_array.push_back(it->second);
+                first = false;
+            } else{
+                cum_sum_array.push_back(accumulated);
+            }
+
+            std::cerr << " >>>>>> The weight is , " << it->second;
 
             if (accumulated >= threshold)
                 break;
@@ -134,11 +151,19 @@ struct QuantileApproximateWeighted
             ++it;
         }
 
+        // debug print
+
+        for(size_t j = 0 ; j < sample_weights.size() ; ++j) {
+            std::cerr << ">>>> Element in CUM SUM Array"  << cum_sum_array[i] << std::endl;
+            std::cerr << ">>>> Element in sample_weights Array"  << sample_weights[i] << std::endl;
+            std::cerr << ">>>> Element in values Array"  << values[i].first << std::endl;
+        }
+
+
         if (it == end)
             --it;
 
         return it->first;
-//        return nullptr;
     }
 
     /// Get the `size` values of `levels` quantiles. Write `size` results starting with `result` address.
