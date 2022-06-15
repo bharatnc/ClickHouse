@@ -83,9 +83,10 @@ struct QuantileApproximateWeighted
             return std::numeric_limits<Value>::quiet_NaN();
 
         /// Copy the data to a temporary array to get the element you need in order.
-        using Pair = typename Map::value_type;
-        std::unique_ptr<Pair[]> array_holder(new Pair[size]);
-        Pair * array = array_holder.get();
+        using Pair = typename std::pair<Value, Weight>;
+//        std::unique_ptr<Pair[]> array_holder(new Pair[size]);
+        std::vector<Pair> array;
+//        Pair * array = array_holder.get();
 
         /// Note: 64-bit integer weight can overflow.
         /// We do some implementation specific behaviour (return approximate or garbage results).
@@ -94,7 +95,7 @@ struct QuantileApproximateWeighted
         /// It will be reasonable to change the type of weight to Float64 in the map,
         /// but we don't do that for compatibility of serialized data.
 
-        size_t i = 0;
+//        size_t i = 0;
         Float64 sum_weight = 0;
         for (const auto & pair : map)
         {
@@ -105,36 +106,45 @@ struct QuantileApproximateWeighted
             sum_weight += pair.getMapped();
             // populate array with both actual value and weight for value.
             // i.e, {value: weighted, value:weight, ... } etc
-            array[i] = pair.getValue();
-            ++i;
+            auto value = pair.getKey();
+            auto weight = pair.getMapped();
+            array.emplace_back(std::pair(value, weight));
+//            ++i;
         }
 
         // sort the array of values. Here a.first and b.first since it's the values
         // a.second and b.second are the values.
-        ::sort(array, array + size, [](const Pair & a, const Pair & b) { return a.first < b.first; });
+        ::sort(array.begin(), array.end(), [](const Pair & a, const Pair & b) { return a.first < b.first; });
 
         // calculates threshild using weight sum * level of quantile
         // for example {1,1,1,1} with quantile level 0.2,
         // it's the weight sum of 4 * 0.2 = 0.8
-        Float64 threshold = std::ceil(sum_weight * level);
-        Float64 accumulated = 0;
+        [[ maybe_unused ]] Float64 threshold = std::ceil(sum_weight * level);
+//        Float64 accumulated = 0;
 
-        const Pair * it = array;
-        const Pair * end = array + size;
-        while (it < end)
-        {
-            accumulated += it->second;
+//        const Pair * it = array;
+//        const Pair * end = array + size;
+//        while (it < end)
+//        {
+//            accumulated += it->second;
+//
+//            if (accumulated >= threshold)
+//                break;
+//
+//            ++it;
+//        }
+//
+//        if (it == end)
+//            --it;
 
-            if (accumulated >= threshold)
-                break;
+//        for (const auto & a: array){
+//            accumulated += a.first;
+//            if (accumulated >= threshold)
+//                break;
+//        }
 
-            ++it;
-        }
-
-        if (it == end)
-            --it;
-
-        return it->first;
+        return array[1].first;
+//        return nullptr;
     }
 
     /// Get the `size` values of `levels` quantiles. Write `size` results starting with `result` address.
