@@ -83,9 +83,9 @@ struct QuantileApproximateWeighted
             return std::numeric_limits<Value>::quiet_NaN();
 
         /// Copy the data to a temporary array to get the element you need in order.
-        using Pair = typename std::pair<Value, Weight>;
+        using Pair = typename std::pair<UnderlyingType, Weight>;
         std::unique_ptr<Pair[]> array_holder(new Pair[size]);
-//        std::vector<Pair> array;
+        //        std::vector<Pair> array;
         Pair * array = array_holder.get();
 
         /// Note: 64-bit integer weight can overflow.
@@ -119,14 +119,15 @@ struct QuantileApproximateWeighted
         // calculates threshild using weight sum * level of quantile
         // for example {1,1,1,1} with quantile level 0.2,
         // it's the weight sum of 4 * 0.2 = 0.8
-        Float64 threshold = std::ceil(sum_weight * level);
+        [[maybe_unused]] Float64 threshold = std::ceil(sum_weight * level);
         Float64 accumulated = 0;
 
         // contains cumulative sum of weights;
-        std::vector<Weight> cum_sum_array;
+        std::vector<Weight> cum_sum_array; //sn
         std::vector<Weight> sample_weights;
-        std::vector<Value> values;
+        std::vector<UnderlyingType> values;
 
+        // iterate and populate
         const Pair * it = array;
         const Pair * end = array + size;
         bool first = true;
@@ -136,27 +137,43 @@ struct QuantileApproximateWeighted
             sample_weights.push_back(it->second);
             values.push_back(it->first);
 
-            if(first) {
+            if (first)
+            {
                 cum_sum_array.push_back(it->second);
                 first = false;
-            } else{
+            }
+            else
+            {
                 cum_sum_array.push_back(accumulated);
             }
 
             std::cerr << " >>>>>> The weight is , " << it->second;
 
-            if (accumulated >= threshold)
-                break;
-
+            //            if (accumulated >= threshold)
+            //                break;
             ++it;
         }
 
+//        auto original_sample_weights = sample_weights;
+        std::vector<Weight> weighted_quantile;
+
+
+        for (size_t idx = 0; idx < sample_weights.size(); ++idx)
+            sample_weights[idx] *= 0.5;
+
+        for (size_t idx = 0; idx < cum_sum_array.size(); ++idx)
+            weighted_quantile.push_back(cum_sum_array[idx] - sample_weights[idx]);
+
+        for (size_t idx = 0; idx < weighted_quantile.size(); ++idx)
+            weighted_quantile[idx] = weighted_quantile[idx] / sum_weight;
+        // wighted =
         // debug print
 
-        for(size_t j = 0 ; j < sample_weights.size() ; ++j) {
-            std::cerr << ">>>> Element in CUM SUM Array"  << cum_sum_array[i] << std::endl;
-            std::cerr << ">>>> Element in sample_weights Array"  << sample_weights[i] << std::endl;
-            std::cerr << ">>>> Element in values Array"  << values[i].first << std::endl;
+        for (size_t j = 0; j < sample_weights.size(); ++j)
+        {
+            std::cerr << ">>>> Element in CUM SUM Array" << cum_sum_array[j] << std::endl;
+            std::cerr << ">>>> Element in sample_weights Array" << sample_weights[j] << std::endl;
+            std::cerr << ">>>> Element in weighted_quantile Array" << weighted_quantile[j] << std::endl;
         }
 
 
