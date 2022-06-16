@@ -123,8 +123,8 @@ struct QuantileApproximateWeighted
         Float64 accumulated = 0;
 
         // contains cumulative sum of weights;
-        std::vector<Weight> cum_sum_array; //sn
-        std::vector<Weight> sample_weights;
+        std::vector<Float64> cum_sum_array; //sn
+        std::vector<Float64> sample_weights;
         std::vector<UnderlyingType> values;
 
         // iterate and populate
@@ -148,26 +148,36 @@ struct QuantileApproximateWeighted
             }
 
             std::cerr << " >>>>>> The weight is , " << it->second;
-
-            //            if (accumulated >= threshold)
-            //                break;
             ++it;
         }
 
 //        auto original_sample_weights = sample_weights;
-        std::vector<Weight> weighted_quantile;
+        std::vector<Float64> weighted_quantile;
 
+        std::cout << ">>>>>>> The sum weight is " << sum_weight << std::endl;
 
-        for (size_t idx = 0; idx < sample_weights.size(); ++idx)
+        /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
+        for (size_t idx = 0; idx < sample_weights.size(); ++idx) {
             sample_weights[idx] *= 0.5;
+            auto res = cum_sum_array[idx] - sample_weights[idx];
+            weighted_quantile.push_back(res);
+        }
 
-        for (size_t idx = 0; idx < cum_sum_array.size(); ++idx)
-            weighted_quantile.push_back(cum_sum_array[idx] - sample_weights[idx]);
+        for(auto k : sample_weights)
+            std::cerr << ">>>>>> 2: " << k << std::endl;
+
+//        for (size_t idx = 0; idx < cum_sum_array.size(); ++idx)
+//            weighted_quantile.push_back(cum_sum_array[idx] - sample_weights[idx]);
+
+        for(auto k : weighted_quantile)
+            std::cerr << " weighted quantile array >>>>>> 3: " << k << std::endl;
 
         for (size_t idx = 0; idx < weighted_quantile.size(); ++idx)
-            weighted_quantile[idx] = weighted_quantile[idx] / sum_weight;
-        // wighted =
-        // debug print
+            weighted_quantile[idx]  /= sum_weight;
+
+
+        for(auto k : weighted_quantile)
+            std::cerr << ">>>>>> 4: " << k << std::endl;
 
         for (size_t j = 0; j < sample_weights.size(); ++j)
         {
@@ -176,12 +186,41 @@ struct QuantileApproximateWeighted
             std::cerr << ">>>> Element in weighted_quantile Array" << weighted_quantile[j] << std::endl;
         }
 
+        Float64 k,l;
+        UnderlyingType g;
+        //Find the index of the element of xgdat that is nearest to x
+        auto ii = min_element(weighted_quantile.begin(), weighted_quantile.end(),
+                             [level] (double a, double b)
+                             {
+                                 return abs(level-a)<abs(level-b);
+                             });
+        k = std::distance(weighted_quantile.begin(), ii); //Nearest index
+
+        //Find the index of the element of xgdat that is nearest to x
+        //and it is not the same index as before
+        auto j = min_element(weighted_quantile.begin(), weighted_quantile.end(),
+                             [level,&weighted_quantile,k] (double a, double b)
+                             {
+                                 if (a!=weighted_quantile[k]) return abs(level-a)<abs(level-b);
+                                 else return false;
+                             });
+        l = std::distance(weighted_quantile.begin(), j); //Second nearest index
+
+        //Interpolation:
+        if(weighted_quantile[k]<weighted_quantile[l])
+            g = values[k]+(level-weighted_quantile[k])*(values[l]-values[k])/(weighted_quantile[l]-weighted_quantile[k]);
+        else
+            g = values[l]+(level-weighted_quantile[l])*(values[k]-values[l])/(weighted_quantile[k]-weighted_quantile[l]);
+
+
 
         if (it == end)
             --it;
 
-        return it->first;
+        return g;
+//        return it->first;
     }
+
 
     /// Get the `size` values of `levels` quantiles. Write `size` results starting with `result` address.
     /// indices - an array of index levels such that the corresponding elements will go in ascending order.
