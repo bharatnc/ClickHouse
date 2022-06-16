@@ -85,7 +85,6 @@ struct QuantileApproximateWeighted
         /// Copy the data to a temporary array to get the element you need in order.
         using Pair = typename std::pair<UnderlyingType, Weight>;
         std::unique_ptr<Pair[]> array_holder(new Pair[size]);
-        //        std::vector<Pair> array;
         Pair * array = array_holder.get();
 
         /// Note: 64-bit integer weight can overflow.
@@ -119,7 +118,6 @@ struct QuantileApproximateWeighted
         // calculates threshild using weight sum * level of quantile
         // for example {1,1,1,1} with quantile level 0.2,
         // it's the weight sum of 4 * 0.2 = 0.8
-        [[maybe_unused]] Float64 threshold = std::ceil(sum_weight * level);
         Float64 accumulated = 0;
 
         // contains cumulative sum of weights;
@@ -236,7 +234,7 @@ struct QuantileApproximateWeighted
         }
 
         /// Copy the data to a temporary array to get the element you need in order.
-        using Pair = typename Map::value_type;
+        using Pair = typename std::pair<UnderlyingType, Weight>;
         std::unique_ptr<Pair[]> array_holder(new Pair[size]);
         Pair * array = array_holder.get();
 
@@ -245,7 +243,9 @@ struct QuantileApproximateWeighted
         for (const auto & pair : map)
         {
             sum_weight += pair.getMapped();
-            array[i] = pair.getValue();
+            auto value = pair.getKey();
+            auto weight = pair.getMapped();
+            array[i] = std::pair(value, weight);
             ++i;
         }
 
@@ -253,33 +253,107 @@ struct QuantileApproximateWeighted
 
         Float64 accumulated = 0;
 
+        // contains cumulative sum of weights;
+        std::vector<Float64> cum_sum_array; //sn
+        std::vector<Float64> sample_weights;
+        std::vector<UnderlyingType> values;
+
+        // iterate and populate
         const Pair * it = array;
         const Pair * end = array + size;
-
-        size_t level_index = 0;
-        Float64 threshold = std::ceil(sum_weight * levels[indices[level_index]]);
-
+        bool first = true;
         while (it < end)
         {
             accumulated += it->second;
+            sample_weights.push_back(it->second);
+            values.push_back(it->first);
 
-            while (accumulated >= threshold)
+            if (first)
             {
-                result[indices[level_index]] = it->first;
-                ++level_index;
-
-                if (level_index == num_levels)
-                    return;
-
-                threshold = std::ceil(sum_weight * levels[indices[level_index]]);
+                cum_sum_array.push_back(it->second);
+                first = false;
+            }
+            else
+            {
+                cum_sum_array.push_back(accumulated);
             }
 
+            std::cerr << " >>>>>> The weight is , " << it->second;
             ++it;
         }
 
+        //        auto original_sample_weights = sample_weights;
+        std::vector<Float64> weighted_quantile;
+
+        std::cout << ">>>>>>> The sum weight is " << sum_weight << std::endl;
+
+        /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
+        for (size_t idx = 0; idx < sample_weights.size(); ++idx)
+        {
+            sample_weights[idx] *= 0.5;
+            auto res = cum_sum_array[idx] - sample_weights[idx];
+            weighted_quantile.push_back(res);
+        }
+
+        for (auto k : sample_weights)
+            std::cerr << ">>>>>> 2: " << k << std::endl;
+
+        //        for (size_t idx = 0; idx < cum_sum_array.size(); ++idx)
+        //            weighted_quantile.push_back(cum_sum_array[idx] - sample_weights[idx]);
+
+        for (auto k : weighted_quantile)
+            std::cerr << " weighted quantile array >>>>>> 3: " << k << std::endl;
+
+        for (size_t idx = 0; idx < weighted_quantile.size(); ++idx)
+            weighted_quantile[idx] /= sum_weight;
+
+
+        for (auto k : weighted_quantile)
+            std::cerr << ">>>>>> 4: " << k << std::endl;
+
+        for (size_t j = 0; j < sample_weights.size(); ++j)
+        {
+            std::cerr << ">>>> Element in CUM SUM Array" << cum_sum_array[j] << std::endl;
+            std::cerr << ">>>> Element in sample_weights Array" << sample_weights[j] << std::endl;
+            std::cerr << ">>>> Element in weighted_quantile Array" << weighted_quantile[j] << std::endl;
+        }
+        
+        size_t level_index = 0;
+
         while (level_index < num_levels)
         {
-            result[indices[level_index]] = array[size - 1].first;
+            Float64 k, l;
+            UnderlyingType g;
+            auto level = levels[indices[level_index]];
+            //Find the index of the element of xgdat that is nearest to x
+            auto ii = min_element(
+                weighted_quantile.begin(),
+                weighted_quantile.end(),
+                [level](double a, double b) { return abs(level - a) < abs(level - b); });
+            k = std::distance(weighted_quantile.begin(), ii); //Nearest index
+
+            //Find the index of the element of xgdat that is nearest to x
+            //and it is not the same index as before
+            auto j = min_element(
+                weighted_quantile.begin(),
+                weighted_quantile.end(),
+                [level, &weighted_quantile, k](double a, double b)
+                {
+                    if (a != weighted_quantile[k])
+                        return abs(level - a) < abs(level - b);
+                    else
+                        return false;
+                });
+            l = std::distance(weighted_quantile.begin(), j); //Second nearest index
+
+            //Interpolation:
+            if (weighted_quantile[k] < weighted_quantile[l])
+                g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
+            else
+                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
+
+
+            result[indices[level_index]] = g;
             ++level_index;
         }
     }
