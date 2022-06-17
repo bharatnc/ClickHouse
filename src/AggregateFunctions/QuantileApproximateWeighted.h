@@ -132,7 +132,6 @@ struct QuantileApproximateWeighted
                 cum_sum_array.push_back(accumulated);
             }
 
-            std::cerr << " >>>>>> The weight is , " << it->second;
             ++it;
         }
 
@@ -146,11 +145,9 @@ struct QuantileApproximateWeighted
         {
             sample_weights[idx] *= 0.5;
             auto res = cum_sum_array[idx] - sample_weights[idx];
+            res /= sum_weight;
             weighted_quantile.push_back(res);
         }
-
-        for (size_t idx = 0; idx < weighted_quantile.size(); ++idx)
-            weighted_quantile[idx] /= sum_weight;
 
         /// linear interpolation
         Float64 k, l;
@@ -173,6 +170,8 @@ struct QuantileApproximateWeighted
 
         if (weighted_quantile[k] < weighted_quantile[l])
             g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
+        else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
+            g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
         else
             g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
 
@@ -275,10 +274,12 @@ struct QuantileApproximateWeighted
                     else
                         return false;
                 });
-            l = std::distance(weighted_quantile.begin(), j); //Second nearest index
+            l = std::distance(weighted_quantile.begin(), j);
 
             if (weighted_quantile[k] < weighted_quantile[l])
                 g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
+            else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
+                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
             else
                 g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
 
