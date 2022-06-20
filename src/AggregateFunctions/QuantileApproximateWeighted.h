@@ -83,82 +83,66 @@ struct QuantileApproximateWeighted
             return std::numeric_limits<Value>::quiet_NaN();
 
         /// Copy the data to a temporary array to get the element you need in order.
-        using Pair = typename std::pair<UnderlyingType, Weight>;
-        std::unique_ptr<Pair[]> array_holder(new Pair[size]);
-        Pair * array = array_holder.get();
+        using Pair = typename std::pair<UnderlyingType, Float64>;
+        std::vector<Pair> value_weight_pairs;
 
-        /// Note: 64-bit integer weight can overflow.
-        /// We do some implementation specific behaviour (return approximate or garbage results).
+        /// Note: weight provided must be a 64-bit integer
         /// Float64 is used as accumulator here to get approximate results.
-        /// But weight can be already overflowed in computations in 'add' and 'merge' methods.
-        /// It will be reasonable to change the type of weight to Float64 in the map,
-        /// but we don't do that for compatibility of serialized data.
+        /// But weight used in the internal array is stored as Float64 as we
+        /// do some quantile estimation operation which involves division and
+        /// require Float64 level of precision.
 
-        size_t i = 0;
         Float64 sum_weight = 0;
         for (const auto & pair : map)
         {
             sum_weight += pair.getMapped();
             auto value = pair.getKey();
             auto weight = pair.getMapped();
-            array[i] = std::pair(value, weight);
-            ++i;
+            value_weight_pairs.push_back(std::make_pair(value, weight));
         }
 
-        ::sort(array, array + size, [](const Pair & a, const Pair & b) { return a.first < b.first; });
+        ::sort(value_weight_pairs.begin(), value_weight_pairs.end(), [](const Pair & a, const Pair & b) { return a.first < b.first; });
 
         Float64 accumulated = 0;
 
         std::vector<Float64> cum_sum_array;
-        std::vector<Float64> weights;
-        std::vector<UnderlyingType> values;
 
-        const Pair * it = array;
-        const Pair * end = array + size;
         bool first = true;
-        while (it < end)
+        for(size_t idx = 0 ; idx < size ; ++idx)
         {
-            accumulated += it->second;
-            weights.push_back(it->second);
-            values.push_back(it->first);
+            accumulated += value_weight_pairs[idx].second;
 
             if (first)
             {
-                cum_sum_array.push_back(it->second);
+                cum_sum_array.push_back(value_weight_pairs[idx].second);
                 first = false;
             }
             else
             {
                 cum_sum_array.push_back(accumulated);
             }
-
-            ++it;
         }
 
-        if (it == end)
-            --it;
-
-
         /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
-        for (size_t idx = 0; idx < weights.size(); ++idx)
-            weights[idx] = (cum_sum_array[idx] - 0.5 * weights[idx]) / sum_weight;
+        for (size_t idx = 0; idx < size; ++idx)
+            value_weight_pairs[idx].second = (cum_sum_array[idx] - 0.5 * value_weight_pairs[idx].second) / sum_weight;
 
         /// linear interpolation
         UnderlyingType g;
 
         size_t idx = 0;
-        if (level >= weights[size - 2])
+        if (level >= value_weight_pairs[size - 2].second)
         {
             idx = size - 2;
         }
         else
         {
-            while (level > weights[idx + 1])
+            while (level > value_weight_pairs[idx + 1].second)
                 idx++;
         }
 
-        Float64 xl = weights[idx], xr = weights[idx + 1];
-        UnderlyingType yl = values[idx], yr = values[idx + 1];
+        Float64 xl = value_weight_pairs[idx].second, xr = value_weight_pairs[idx + 1].second;
+        UnderlyingType yl = value_weight_pairs[idx].first, yr = value_weight_pairs[idx + 1].first;
 
         if (level < xl)
             yr = yl;
@@ -186,53 +170,42 @@ struct QuantileApproximateWeighted
         }
 
         /// Copy the data to a temporary array to get the element you need in order.
-        using Pair = typename std::pair<UnderlyingType, Weight>;
-        std::unique_ptr<Pair[]> array_holder(new Pair[size]);
-        Pair * array = array_holder.get();
+        using Pair = typename std::pair<UnderlyingType, Float64>;
+        std::vector<Pair> value_weight_pairs;
 
-        size_t i = 0;
         Float64 sum_weight = 0;
         for (const auto & pair : map)
         {
             sum_weight += pair.getMapped();
             auto value = pair.getKey();
             auto weight = pair.getMapped();
-            array[i] = std::pair(value, weight);
-            ++i;
+            value_weight_pairs.push_back(std::make_pair(value, weight));
         }
 
-        ::sort(array, array + size, [](const Pair & a, const Pair & b) { return a.first < b.first; });
+        ::sort(value_weight_pairs.begin(), value_weight_pairs.end(), [](const Pair & a, const Pair & b) { return a.first < b.first; });
 
         Float64 accumulated = 0;
         std::vector<Float64> cum_sum_array;
-        std::vector<Float64> weights;
-        std::vector<UnderlyingType> values;
 
-        const Pair * it = array;
-        const Pair * end = array + size;
         bool first = true;
-        while (it < end)
+        for (size_t idx = 0 ; idx < size ; ++idx)
         {
-            accumulated += it->second;
-            weights.push_back(it->second);
-            values.push_back(it->first);
+            accumulated += value_weight_pairs[idx].second;
 
             if (first)
             {
-                cum_sum_array.push_back(it->second);
+                cum_sum_array.emplace_back(value_weight_pairs[idx].second);
                 first = false;
             }
             else
             {
-                cum_sum_array.push_back(accumulated);
+                cum_sum_array.emplace_back(accumulated);
             }
-            ++it;
         }
 
         /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
-        for (size_t idx = 0; idx < weights.size(); ++idx)
-            weights[idx] = (cum_sum_array[idx] - 0.5 * weights[idx]) / sum_weight;
-
+        for (size_t idx = 0; idx < size; ++idx)
+            value_weight_pairs[idx].second = (cum_sum_array[idx] - 0.5 * value_weight_pairs[idx].second) / sum_weight;
 
         size_t level_index = 0;
 
@@ -242,18 +215,18 @@ struct QuantileApproximateWeighted
             UnderlyingType g;
             auto level = levels[indices[level_index]];
             size_t idx = 0;
-            if (level >= weights[size - 2])
+            if (level >= value_weight_pairs[size - 2].second)
             {
                 idx = size - 2;
             }
             else
             {
-                while (level > weights[idx + 1])
+                while (level > value_weight_pairs[idx + 1].second)
                     idx++;
             }
 
-            Float64 xl = weights[idx], xr = weights[idx + 1];
-            UnderlyingType yl = values[idx], yr = values[idx + 1];
+            Float64 xl = value_weight_pairs[idx].second, xr = value_weight_pairs[idx + 1].second;
+            UnderlyingType yl = value_weight_pairs[idx].first, yr = value_weight_pairs[idx + 1].first;
 
             if (level < xl)
                 yr = yl;
