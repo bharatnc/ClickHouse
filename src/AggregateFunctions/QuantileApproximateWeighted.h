@@ -152,26 +152,45 @@ struct QuantileApproximateWeighted
         /// linear interpolation
         Float64 k, l;
         UnderlyingType g;
-        auto ii = min_element(
-            weighted_quantile.begin(), weighted_quantile.end(), [level](double a, double b) { return abs(level - a) < abs(level - b); });
-        k = std::distance(weighted_quantile.begin(), ii); //Nearest index
+//        auto ii = min_element(
+//            weighted_quantile.begin(), weighted_quantile.end(), [level](double a, double b) { return abs(level - a) < abs(level - b); });
+//        k = std::distance(weighted_quantile.begin(), ii); //Nearest index
+//
+//        auto j = min_element(
+//            weighted_quantile.begin(),
+//            weighted_quantile.end(),
+//            [level, &weighted_quantile, k](double a, double b)
+//            {
+//                if (a != weighted_quantile[k])
+//                    return abs(level - a) < abs(level - b);
+//                else
+//                    return false;
+//            });
+//        l = std::distance(weighted_quantile.begin(), j);
 
-        auto j = min_element(
-            weighted_quantile.begin(),
-            weighted_quantile.end(),
-            [level, &weighted_quantile, k](double a, double b)
-            {
-                if (a != weighted_quantile[k])
-                    return abs(level - a) < abs(level - b);
-                else
-                    return false;
-            });
-        l = std::distance(weighted_quantile.begin(), j);
+        auto ii = std::lower_bound(weighted_quantile.begin(), weighted_quantile.end(), level);
+        k = weighted_quantile.begin() - ii;
+        if (ii == weighted_quantile.end())
+            --k;
+        else if(*ii == level) {
+            k = std::abs(k);
+            if (k > size)
+                k = size-1;
+            return  values[k];
+        }
+
+        l =  k ? k-1: 1;
+        l = std::abs(l);
+        k = std::abs(k);
+        if (l > size)
+            l = size-1;
+        if (k > size)
+            k = size-1;
 
         if (weighted_quantile[k] < weighted_quantile[l])
             g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
-        else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
-            g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
+//        else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
+//            g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
         else
             g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
 
@@ -257,29 +276,54 @@ struct QuantileApproximateWeighted
             Float64 k, l;
             UnderlyingType g;
             auto level = levels[indices[level_index]];
-            auto ii = min_element(
-                weighted_quantile.begin(),
-                weighted_quantile.end(),
-                [level](double a, double b) { return abs(level - a) < abs(level - b); });
-            k = std::distance(weighted_quantile.begin(), ii);
+//            auto ii = min_element(
+//                weighted_quantile.begin(),
+//                weighted_quantile.end(),
+//                [level](double a, double b) { return abs(level - a) < abs(level - b); });
+//            k = std::distance(weighted_quantile.begin(), ii);
+//
+//
+//            auto j = min_element(
+//                weighted_quantile.begin(),
+//                weighted_quantile.end(),
+//                [level, &weighted_quantile, k](double a, double b)
+//                {
+//                    if (a != weighted_quantile[k])
+//                        return abs(level - a) < abs(level - b);
+//                    else
+//                        return false;
+//                });
+//            l = std::distance(weighted_quantile.begin(), j);
 
+            auto ii = std::lower_bound(weighted_quantile.begin(), weighted_quantile.end(), level);
+            k = weighted_quantile.begin() - ii;
+            if (ii == weighted_quantile.end())
+                --k;
+            else if(*ii == level) {
+                k = std::abs(k);
+                if (k > size)
+                    k = size-1;
+                result[indices[level_index]] = values[k];
+                ++level_index;
+                continue ;
+            }
 
-            auto j = min_element(
-                weighted_quantile.begin(),
-                weighted_quantile.end(),
-                [level, &weighted_quantile, k](double a, double b)
-                {
-                    if (a != weighted_quantile[k])
-                        return abs(level - a) < abs(level - b);
-                    else
-                        return false;
-                });
-            l = std::distance(weighted_quantile.begin(), j);
+            l =  k ? k-1: 1;
+            l = std::abs(l);
+            k = std::abs(k);
+            if (l > size)
+                l = size-1;
+            if (k > size)
+                k = size-1;
+
+            std::cerr << " >>>>>>>>>>>>>>>>>>>> The size is " << size << std::endl;
+            std::cerr << " >>>>>>>>>>>>>>>>>>>> The L is " << l << std::endl;
+            std::cerr << " >>>>>>>>>>>>>>>>>>>> The k is " << k << std::endl;
 
             if (weighted_quantile[k] < weighted_quantile[l])
                 g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
-            else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
-                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
+//            else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
+//                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
             else
                 g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
 
