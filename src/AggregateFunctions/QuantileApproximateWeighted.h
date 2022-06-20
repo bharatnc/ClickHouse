@@ -110,7 +110,7 @@ struct QuantileApproximateWeighted
         Float64 accumulated = 0;
 
         std::vector<Float64> cum_sum_array;
-        std::vector<Float64> sample_weights;
+        std::vector<Float64> weights;
         std::vector<UnderlyingType> values;
 
         const Pair * it = array;
@@ -119,7 +119,7 @@ struct QuantileApproximateWeighted
         while (it < end)
         {
             accumulated += it->second;
-            sample_weights.push_back(it->second);
+            weights.push_back(it->second);
             values.push_back(it->first);
 
             if (first)
@@ -137,33 +137,27 @@ struct QuantileApproximateWeighted
 
         if (it == end)
             --it;
-        std::vector<Float64> weighted_quantile;
 
 
         /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
-        for (size_t idx = 0; idx < sample_weights.size(); ++idx)
-        {
-            sample_weights[idx] *= 0.5;
-            auto res = cum_sum_array[idx] - sample_weights[idx];
-            res /= sum_weight;
-            weighted_quantile.push_back(res);
-        }
+        for (size_t idx = 0; idx < weights.size(); ++idx)
+            weights[idx] = (cum_sum_array[idx] - 0.5 * weights[idx]) / sum_weight;
 
         /// linear interpolation
         UnderlyingType g;
 
         size_t idx = 0;
-        if (level >= weighted_quantile[size - 2])
+        if (level >= weights[size - 2])
         {
             idx = size - 2;
         }
         else
         {
-            while (level > weighted_quantile[idx + 1])
+            while (level > weights[idx + 1])
                 idx++;
         }
 
-        Float64 xl = weighted_quantile[idx], xr = weighted_quantile[idx + 1];
+        Float64 xl = weights[idx], xr = weights[idx + 1];
         UnderlyingType yl = values[idx], yr = values[idx + 1];
 
         if (level < xl)
@@ -211,7 +205,7 @@ struct QuantileApproximateWeighted
 
         Float64 accumulated = 0;
         std::vector<Float64> cum_sum_array;
-        std::vector<Float64> sample_weights;
+        std::vector<Float64> weights;
         std::vector<UnderlyingType> values;
 
         const Pair * it = array;
@@ -220,7 +214,7 @@ struct QuantileApproximateWeighted
         while (it < end)
         {
             accumulated += it->second;
-            sample_weights.push_back(it->second);
+            weights.push_back(it->second);
             values.push_back(it->first);
 
             if (first)
@@ -235,16 +229,10 @@ struct QuantileApproximateWeighted
             ++it;
         }
 
-        std::vector<Float64> weighted_quantile;
-
         /// weighted_quantile = cum_sum_arr - (0.5 * sample_weights)
-        for (size_t idx = 0; idx < sample_weights.size(); ++idx)
-        {
-            sample_weights[idx] *= 0.5;
-            auto res = cum_sum_array[idx] - sample_weights[idx];
-            res /= sum_weight;
-            weighted_quantile.push_back(res);
-        }
+        for (size_t idx = 0; idx < weights.size(); ++idx)
+            weights[idx] = (cum_sum_array[idx] - 0.5 * weights[idx]) / sum_weight;
+
 
         size_t level_index = 0;
 
@@ -254,17 +242,17 @@ struct QuantileApproximateWeighted
             UnderlyingType g;
             auto level = levels[indices[level_index]];
             size_t idx = 0;
-            if (level >= weighted_quantile[size - 2])
+            if (level >= weights[size - 2])
             {
                 idx = size - 2;
             }
             else
             {
-                while (level > weighted_quantile[idx + 1])
+                while (level > weights[idx + 1])
                     idx++;
             }
 
-            Float64 xl = weighted_quantile[idx], xr = weighted_quantile[idx + 1];
+            Float64 xl = weights[idx], xr = weights[idx + 1];
             UnderlyingType yl = values[idx], yr = values[idx + 1];
 
             if (level < xl)
