@@ -150,73 +150,29 @@ struct QuantileApproximateWeighted
         }
 
         /// linear interpolation
-//        Float64 k, l;
         UnderlyingType g;
-//        auto ii = min_element(
-//            weighted_quantile.begin(), weighted_quantile.end(), [level](double a, double b) { return abs(level - a) < abs(level - b); });
-//        k = std::distance(weighted_quantile.begin(), ii); //Nearest index
-//
-//        auto j = min_element(
-//            weighted_quantile.begin(),
-//            weighted_quantile.end(),
-//            [level, &weighted_quantile, k](double a, double b)
-//            {
-//                if (a != weighted_quantile[k])
-//                    return abs(level - a) < abs(level - b);
-//                else
-//                    return false;
-//            });
-//        l = std::distance(weighted_quantile.begin(), j);
 
-//        auto ii = std::lower_bound(weighted_quantile.begin(), weighted_quantile.end(), level);
-//        k = weighted_quantile.begin() - ii;
-//        if (ii == weighted_quantile.end())
-//            --k;
-//        else if(*ii == level) {
-//            k = std::abs(k);
-//            if (k > size)
-//                k = size-1;
-//            return  values[k];
-//        }
-//
-//        l =  k ? k-1: 1;
-//        l = std::abs(l);
-//        k = std::abs(k);
-//        if (l > size)
-//            l = size-1;
-//        if (k > size)
-//            k = size-1;
-
-
-
-//        if (weighted_quantile[k] < weighted_quantile[l])
-//            g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
-////        else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
-////            g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
-//        else
-//            g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
-
-
-        size_t idx = 0;                                                                  // find left end of interval for interpolation
-        if ( level >= weighted_quantile[size - 2] )                                                 // special case: beyond right end
+        size_t idx = 0;
+        if (level >= weighted_quantile[size - 2])
         {
             idx = size - 2;
         }
         else
         {
-            while ( level > weighted_quantile[idx+1] ) idx++;
+            while (level > weighted_quantile[idx + 1])
+                idx++;
         }
 
-        Float64 xL = weighted_quantile[idx];
-        UnderlyingType yL = values[idx];
-        Float64 xR = weighted_quantile[idx+1];
-        UnderlyingType yR = values[idx+1];      // points on either side (unless beyond ends)
+        Float64 xl = weighted_quantile[idx], xr = weighted_quantile[idx + 1];
+        UnderlyingType yl = values[idx], yr = values[idx + 1];
 
-        if ( level < xL ) yR = yL;
-        if ( level > xR ) yL = yR;
+        if (level < xl)
+            yr = yl;
+        if (level > xr)
+            yl = yr;
 
-        auto dydx = ( yR - yL ) / ( xR - xL );                                    // gradient
-        g = yL + dydx * ( level - xL );
+        auto dydx = (yr - yl) / (xr - xl);
+        g = yl + dydx * (level - xl);
 
         return g;
     }
@@ -286,90 +242,38 @@ struct QuantileApproximateWeighted
         {
             sample_weights[idx] *= 0.5;
             auto res = cum_sum_array[idx] - sample_weights[idx];
+            res /= sum_weight;
             weighted_quantile.push_back(res);
         }
-
-        for (size_t idx = 0; idx < weighted_quantile.size(); ++idx)
-            weighted_quantile[idx] /= sum_weight;
 
         size_t level_index = 0;
 
         while (level_index < num_levels)
         {
             /// linear interpolation for every level
-//            Float64 k, l;
             UnderlyingType g;
             auto level = levels[indices[level_index]];
-            size_t idx = 0;                                                                  // find left end of interval for interpolation
-            if ( level >= weighted_quantile[size - 2] )                                                 // special case: beyond right end
+            size_t idx = 0;
+            if (level >= weighted_quantile[size - 2])
             {
                 idx = size - 2;
             }
             else
             {
-                while ( level > weighted_quantile[idx+1] ) idx++;
+                while (level > weighted_quantile[idx + 1])
+                    idx++;
             }
 
-            Float64 xL = weighted_quantile[idx];
-            UnderlyingType yL = values[idx];
-            Float64 xR = weighted_quantile[idx+1];
-            UnderlyingType yR = values[idx+1];      // points on either side (unless beyond ends)
+            Float64 xl = weighted_quantile[idx], xr = weighted_quantile[idx + 1];
+            UnderlyingType yl = values[idx], yr = values[idx + 1];
 
-            if ( level < xL ) yR = yL;
-            if ( level > xR ) yL = yR;
+            if (level < xl)
+                yr = yl;
+            if (level > xr)
+                yl = yr;
 
-            auto dydx = ( yR - yL ) / ( xR - xL );                                    // gradient
-            g = yL + dydx * ( level - xL );
-//            auto ii = min_element(
-//                weighted_quantile.begin(),
-//                weighted_quantile.end(),
-//                [level](double a, double b) { return abs(level - a) < abs(level - b); });
-//            k = std::distance(weighted_quantile.begin(), ii);
-//
-//
-//            auto j = min_element(
-//                weighted_quantile.begin(),
-//                weighted_quantile.end(),
-//                [level, &weighted_quantile, k](double a, double b)
-//                {
-//                    if (a != weighted_quantile[k])
-//                        return abs(level - a) < abs(level - b);
-//                    else
-//                        return false;
-//                });
-//            l = std::distance(weighted_quantile.begin(), j);
-
-//            auto ii = std::lower_bound(weighted_quantile.begin(), weighted_quantile.end(), level);
-//            k = weighted_quantile.begin() - ii;
-//            if (ii == weighted_quantile.end())
-//                --k;
-//            else if(*ii == level) {
-//                k = std::abs(k);
-//                if (k > size)
-//                    k = size-1;
-//                result[indices[level_index]] = values[k];
-//                ++level_index;
-//                continue ;
-//            }
-//
-//            l =  k ? k-1: 1;
-//            l = std::abs(l);
-//            k = std::abs(k);
-//            if (l > size)
-//                l = size-1;
-//            if (k > size)
-//                k = size-1;
-
-//            std::cerr << " >>>>>>>>>>>>>>>>>>>> The size is " << size << std::endl;
-//            std::cerr << " >>>>>>>>>>>>>>>>>>>> The L is " << l << std::endl;
-//            std::cerr << " >>>>>>>>>>>>>>>>>>>> The k is " << k << std::endl;
-
-//            if (weighted_quantile[k] < weighted_quantile[l])
-//                g = values[k] + (level - weighted_quantile[k]) * (values[l] - values[k]) / (weighted_quantile[l] - weighted_quantile[k]);
-////            else if (weighted_quantile[k] == weighted_quantile[l]) // (weighted_quantile[k] - weighted_quantile[l]) will be 0
-////                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]); // In this case subsequent division by 0 will lead to undefined behavior.
-//            else
-//                g = values[l] + (level - weighted_quantile[l]) * (values[k] - values[l]) / (weighted_quantile[k] - weighted_quantile[l]);
+            auto dydx = (yr - yl) / (xr - xl);
+            g = yl + dydx * (level - xl);
 
             result[indices[level_index]] = g;
             ++level_index;
