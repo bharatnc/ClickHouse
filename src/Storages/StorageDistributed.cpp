@@ -168,11 +168,17 @@ ASTPtr rewriteSelectQuery(
         RestoreQualifiedNamesVisitor(data).visit(modified_query_ast);
     }
 
+    /// handles the case where database is empty in CREATE query. For example:
+    /// CREATE TABLE d.test AS shard_0.test_data ENGINE = Distributed(test_cluster, '', rand());
+    auto current_database = context->getCurrentDatabase();
+    if(current_database.empty())
+        current_database = remote_database;
+
     /// To make local JOIN works, default database should be added to table names.
     /// But only for JOIN section, since the following should work using default_database:
     /// - SELECT * FROM d WHERE value IN (SELECT l.value FROM l) ORDER BY value
     ///   (see 01487_distributed_in_not_default_db)
-    AddDefaultDatabaseVisitor visitor(context, context->getCurrentDatabase(),
+    AddDefaultDatabaseVisitor visitor(context, current_database,
         /* only_replace_current_database_function_= */false,
         /* only_replace_in_join_= */true);
     visitor.visit(modified_query_ast);
