@@ -17,7 +17,7 @@
 #include <Common/escapeForFileName.h>
 #include <QueryPipeline/QueryPipeline.h>
 #include <Processors/Formats/IInputFormat.h>
-#include <Common/config.h>
+#include "config.h"
 
 
 namespace DB
@@ -233,7 +233,11 @@ void registerDictionarySourceXDBC(DictionarySourceFactory & factory)
                                    bool /* check_config */) -> DictionarySourcePtr {
 #if USE_ODBC
         BridgeHelperPtr bridge = std::make_shared<XDBCBridgeHelper<ODBCBridgeMixin>>(
-            global_context, global_context->getSettings().http_receive_timeout, config.getString(config_prefix + ".odbc.connection_string"));
+            global_context,
+            global_context->getSettings().http_receive_timeout,
+            config.getString(config_prefix + ".odbc.connection_string"),
+            config.getBool(config_prefix + ".settings.odbc_bridge_use_connection_pooling",
+            global_context->getSettingsRef().odbc_bridge_use_connection_pooling));
 
         std::string settings_config_prefix = config_prefix + ".odbc";
 
@@ -275,8 +279,6 @@ void registerDictionarySourceJDBC(DictionarySourceFactory & factory)
                                  bool /* created_from_ddl */) -> DictionarySourcePtr {
         throw Exception(ErrorCodes::SUPPORT_IS_DISABLED,
             "Dictionary source of type `jdbc` is disabled until consistent support for nullable fields.");
-        //        BridgeHelperPtr bridge = std::make_shared<XDBCBridgeHelper<JDBCBridgeMixin>>(config, context.getSettings().http_receive_timeout, config.getString(config_prefix + ".connection_string"));
-        //        return std::make_unique<XDBCDictionarySource>(dict_struct, config, config_prefix + ".jdbc", sample_block, context, bridge);
     };
     factory.registerSource("jdbc", create_table_source);
 }

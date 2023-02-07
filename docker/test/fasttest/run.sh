@@ -116,9 +116,9 @@ function clone_submodules
             contrib/base64
             contrib/cctz
             contrib/libcpuid
+            contrib/libdivide
             contrib/double-conversion
-            contrib/libcxx
-            contrib/libcxxabi
+            contrib/llvm-project
             contrib/lz4
             contrib/zstd
             contrib/fastops
@@ -135,6 +135,11 @@ function clone_submodules
             contrib/replxx
             contrib/wyhash
             contrib/hashidsxx
+            contrib/c-ares
+            contrib/morton-nd
+            contrib/xxHash
+            contrib/simdjson
+            contrib/liburing
         )
 
         git submodule sync
@@ -155,13 +160,13 @@ function run_cmake
         "-DENABLE_THINLTO=0"
         "-DUSE_UNWIND=1"
         "-DENABLE_NURAFT=1"
+        "-DENABLE_SIMDJSON=1"
         "-DENABLE_JEMALLOC=1"
-        "-DENABLE_REPLXX=1"
+        "-DENABLE_LIBURING=1"
     )
 
-    # TODO remove this? we don't use ccache anyway. An option would be to download it
-    # from S3 simultaneously with cloning.
     export CCACHE_DIR="$FASTTEST_WORKSPACE/ccache"
+    export CCACHE_COMPRESSLEVEL=5
     export CCACHE_BASEDIR="$FASTTEST_SOURCE"
     export CCACHE_NOHASHDIR=true
     export CCACHE_COMPILERCHECK=content
@@ -187,9 +192,10 @@ function build
             cp programs/clickhouse "$FASTTEST_OUTPUT/clickhouse"
 
             strip programs/clickhouse -o "$FASTTEST_OUTPUT/clickhouse-stripped"
-            gzip "$FASTTEST_OUTPUT/clickhouse-stripped"
+            zstd --threads=0 "$FASTTEST_OUTPUT/clickhouse-stripped"
         fi
         ccache --show-stats ||:
+        ccache --evict-older-than 1d ||:
     )
 }
 
@@ -225,6 +231,7 @@ function run_tests
         --hung-check
         --fast-tests-only
         --no-random-settings
+        --no-random-merge-tree-settings
         --no-long
         --testname
         --shard
@@ -232,6 +239,7 @@ function run_tests
         --check-zookeeper-session
         --order random
         --print-time
+        --report-logs-stats
         --jobs "${NPROC}"
     )
     time clickhouse-test "${test_opts[@]}" -- "$FASTTEST_FOCUS" 2>&1 \

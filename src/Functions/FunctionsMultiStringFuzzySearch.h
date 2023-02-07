@@ -23,6 +23,12 @@ namespace ErrorCodes
     extern const int ILLEGAL_COLUMN;
 }
 
+/**
+  * multiFuzzyMatchAny(haystack, [pattern_1, pattern_2, ..., pattern_n])
+  * multiFuzzyMatchAnyIndex(haystack, [pattern_1, pattern_2, ..., pattern_n])
+  * multiFuzzyMatchAllIndices(haystack, [pattern_1, pattern_2, ..., pattern_n])
+  *
+  */
 
 template <typename Impl>
 class FunctionsMultiStringFuzzySearch : public IFunction
@@ -81,7 +87,9 @@ public:
         else if (const auto * col_const_uint32 = checkAndGetColumnConst<ColumnUInt32>(edit_distance_ptr.get()))
             edit_distance = col_const_uint32->getValue<UInt32>();
         else
-            throw Exception(ErrorCodes::ILLEGAL_COLUMN, "Illegal column {}. The number is not const or does not fit in UInt32", arguments[1].column->getName());
+            throw Exception(ErrorCodes::ILLEGAL_COLUMN,
+                            "Illegal column {}. The number is not const or does not fit in UInt32",
+                            arguments[1].column->getName());
 
         const ColumnArray * col_needles_vector = checkAndGetColumn<ColumnArray>(needles_ptr.get());
         const ColumnConst * col_needles_const = checkAndGetColumnConst<ColumnArray>(needles_ptr.get());
@@ -99,23 +107,19 @@ public:
         /// the implementations are responsible for resizing the output column
 
         if (col_needles_const)
-        {
             Impl::vectorConstant(
                 col_haystack_vector->getChars(), col_haystack_vector->getOffsets(),
                 col_needles_const->getValue<Array>(),
                 vec_res, offsets_res,
                 edit_distance,
                 allow_hyperscan, max_hyperscan_regexp_length, max_hyperscan_regexp_total_length);
-        }
         else
-        {
             Impl::vectorVector(
                 col_haystack_vector->getChars(), col_haystack_vector->getOffsets(),
                 col_needles_vector->getData(), col_needles_vector->getOffsets(),
                 vec_res, offsets_res,
                 edit_distance,
                 allow_hyperscan, max_hyperscan_regexp_length, max_hyperscan_regexp_total_length);
-        }
 
         // the combination of const haystack + const needle is not implemented because
         // useDefaultImplementationForConstants() == true makes upper layers convert both to
