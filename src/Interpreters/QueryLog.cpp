@@ -306,7 +306,7 @@ void QueryLogElement::appendClientInfo(const ClientInfo & client_info, MutableCo
     columns[i++]->insert(client_info.http_user_agent);
     columns[i++]->insert(client_info.http_referer);
     columns[i++]->insert(client_info.http_host);
-    columns[i++]->insert(client_info.peer_address);
+    columns[i++]->insert(client_info.server_name);
     columns[i++]->insert(client_info.forwarded_for);
 
     columns[i++]->insert(client_info.quota_key);

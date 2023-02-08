@@ -118,7 +118,7 @@ void StorageSystemProcesses::fillData(MutableColumns & res_columns, ContextPtr c
         res_columns[i++]->insert(process.client_info.http_user_agent);
         res_columns[i++]->insert(process.client_info.http_referer);
         res_columns[i++]->insert(process.client_info.http_host);
-        res_columns[i++]->insert(process.client_info.peer_address);
+        res_columns[i++]->insert(process.client_info.server_name);
         res_columns[i++]->insert(process.client_info.forwarded_for);
 
         res_columns[i++]->insert(process.client_info.quota_key);

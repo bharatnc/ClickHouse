@@ -93,7 +93,7 @@ public:
     HTTPMethod http_method = HTTPMethod::UNKNOWN;
     String http_user_agent;
     String http_referer;
-    String peer_address;
+    String server_name;
     String http_host;
 
     /// For mysql and postgresql

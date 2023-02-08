@@ -61,7 +61,7 @@ void ClientInfo::write(WriteBuffer & out, UInt64 server_protocol_revision) const
             writeBinary(http_host, out);
 
         if (server_protocol_revision >= DBMS_MIN_REVISION_WITH_TLS_SNI_IN_CLIENT_INFO)
-            writeBinary(peer_address, out);
+            writeBinary(server_name, out);
     }
 
     if (server_protocol_revision >= DBMS_MIN_REVISION_WITH_QUOTA_KEY_IN_CLIENT_INFO)
@@ -160,7 +160,7 @@ void ClientInfo::read(ReadBuffer & in, UInt64 client_protocol_revision)
             readBinary(http_host, in);
 
         if (client_protocol_revision >= DBMS_MIN_REVISION_WITH_TLS_SNI_IN_CLIENT_INFO)
-            readBinary(peer_address, in);
+            readBinary(server_name, in);
     }
 
     if (client_protocol_revision >= DBMS_MIN_REVISION_WITH_QUOTA_KEY_IN_CLIENT_INFO)
