@@ -453,6 +453,19 @@ X509* SecureSocketImpl::peerCertificate() const
 		return 0;
 }
 
+std::string SecureSocketImpl::getTLSServerName() const
+{
+    std::lock_guard<std::recursive_mutex> lock(_mutex);
+    if (_pSSL)
+    {
+        const char * tls_server_name = SSL_get_servername(_pSSL, TLSEXT_NAMETYPE_host_name);
+        if (tls_server_name == nullptr)
+            return "";
+        return tls_server_name;
+    }
+    return "";
+}
+
 Poco::Timespan SecureSocketImpl::getMaxTimeout()
 {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);

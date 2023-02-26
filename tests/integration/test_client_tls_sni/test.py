@@ -80,7 +80,7 @@ def test_tls_sni():
     execute_query_https("SYSTEM FLUSH LOGS;", user="john", cert_name="client1")
     time.sleep(1)
     res = execute_query_https(
-        "SELECT tls_sni from system.query_log LIMIT 1;",
+        "SELECT tls_server_name from system.query_log LIMIT 1;",
         user="john",
         cert_name="client1",
     )

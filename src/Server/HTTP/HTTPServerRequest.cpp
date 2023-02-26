@@ -31,7 +31,6 @@ HTTPServerRequest::HTTPServerRequest(HTTPContextPtr context, HTTPServerResponse 
     /// Now that we know socket is still connected, obtain addresses
     client_address = session.clientAddress();
     server_address = session.serverAddress();
-    peer_address = session.socket().peerAddress();
     secure = session.socket().secure();
 
     auto receive_timeout = context->getReceiveTimeout();
@@ -97,6 +96,17 @@ Poco::Net::X509Certificate HTTPServerRequest::peerCertificate() const
             return secure_socket->peerCertificate();
     }
     throw Poco::Net::SSLException("No certificate available");
+}
+
+std::string HTTPServerRequest::getTLSSeverName() const
+{
+    if (secure)
+    {
+        const Poco::Net::SecureStreamSocketImpl * secure_socket = dynamic_cast<const Poco::Net::SecureStreamSocketImpl *>(socket);
+        if (secure_socket)
+            return secure_socket->getTLSServerName();
+    }
+    throw Poco::Net::SSLException("No tls server name");
 }
 #endif
 
