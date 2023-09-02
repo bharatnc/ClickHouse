@@ -278,7 +278,7 @@ Field convertFieldToTypeImpl(const Field & src, const IDataType & type, const ID
             return Field(DecimalField<DateTime64>(decimal_value, scale));
         }
 
-        if (which_type.isIPv4() && src.getType() == Field::Types::IPv4)
+        if (which_type.isIPv4() && (src.getType() == Field::Types::IPv4 || src.getType() == Field::Types::UInt64))
         {
             /// Already in needed type.
             return src;
