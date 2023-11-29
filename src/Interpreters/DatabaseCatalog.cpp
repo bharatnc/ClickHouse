@@ -423,7 +423,12 @@ DatabaseAndTable DatabaseCatalog::getTableImpl(
     {
         try
         {
-            table = database->getTable(table_id.table_name, context_);
+            Databases current_databases;
+            {
+                std::lock_guard lock(databases_mutex);
+                current_databases = databases;
+            }
+            table = database->getTableAcrossAllDatabases(table_id.table_name, context_, current_databases);
         }
         catch (const Exception & e)
         {

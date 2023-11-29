@@ -170,7 +170,12 @@ public:
     /// Get the table for work. Return nullptr if there is no table.
     virtual StoragePtr tryGetTable(const String & name, ContextPtr context) const = 0;
 
+    using DatabasePtr = std::shared_ptr<IDatabase>;
+    using Databases = std::map<String, DatabasePtr>;
+
     virtual StoragePtr getTable(const String & name, ContextPtr context) const;
+    virtual StoragePtr getTableAcrossAllDatabases(const String & name, ContextPtr context, Databases databases) const;
+
 
     virtual UUID tryGetTableUUID(const String & /*table_name*/) const { return UUIDHelpers::Nil; }
 
