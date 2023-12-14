@@ -6,6 +6,7 @@
 #include <Interpreters/Context.h>
 #include <Interpreters/ExternalDictionariesLoader.h>
 #include <Poco/Util/AbstractConfiguration.h>
+#include <Storages/StorageMaterializedView.h>
 #include <Common/logger_useful.h>
 #include <Common/CurrentMetrics.h>
 #include <numeric>
@@ -74,15 +75,60 @@ LoadTaskPtrs TablesLoader::loadTablesAsync(LoadJobSet load_after)
 
     /// Compatibility setting which should be enabled by default on attach
     /// Otherwise server will be unable to start for some old-format of IPv6/IPv4 types of columns
+
     ContextMutablePtr load_context = Context::createCopy(global_context);
     load_context->setSetting("cast_ipv4_ipv6_default_on_conversion_error", 1);
+
+    /// Implement here
+
+    /// metadata.parsed_tables should have tables parsed
+    //// databases_to_load should have databases found
+    ///
+    ///     ParsedMetadata parsed_tables;
+    /// where ParsedMetadata = using ParsedMetadata = std::map<QualifiedTableName, ParsedTableMetadata>;
+    /// ParsedTableMetadata contains ast
+    /// try get table type from AST and then plug it below to get materialized view dependency
+
+
+    for(auto & ref_table : referential_dependencies.getTablesSortedByDependency())
+    {
+
+        //// get dependents on this table (views, materialized views etc)
+        auto got = referential_dependencies.getDependents(ref_table);
+
+
+        std::cout << "REF TABLES %%%%%%%% " << ref_table.table_name << " DEPENDENCY .... " << got.size() << "\n";
+
+        for(auto & g: got)
+        {
+
+            auto view = DatabaseCatalog::instance().tryGetTable(g, global_context);
+
+            for (const auto & [k,v]: metadata.parsed_tables)
+            {
+//                v.ast.get()->getQueryKind()
+
+                ASTPtr create_table_query = v.ast;
+//                auto * create = create_table_query->as<ASTCreateQuery>();
+                std::cout<< "IS MATTTTTTTT " << create_table_query.get()->dumpTree() <<"\n";
+            }
+
+
+            std::cerr << " >>>>> THE DEPENDENCY IS " << g.table_name  << "\n";
+            if(view)
+                std::cerr << " >>>>> THE VIEW GOT IS " << view.get()->getName()  << "\n";
+        }
+
+    }
 
     for (const auto & table_id : all_loading_dependencies.getTablesSortedByDependency())
     {
         /// Gather tasks to load before this table
         LoadTaskPtrs load_dependency_tasks;
         for (const StorageID & dependency_id : all_loading_dependencies.getDependencies(table_id))
+        {
             load_dependency_tasks.push_back(load_table[dependency_id.getFullTableName()]);
+        }
 
         // Make load table task
         auto table_name = table_id.getQualifiedName();

@@ -7,6 +7,7 @@
 #include <Parsers/formatAST.h>
 #include <Storages/StorageDictionary.h>
 #include <Storages/StorageFactory.h>
+#include <Storages/StorageMaterializedView.h>
 #include <Common/typeid_cast.h>
 #include <Common/CurrentMetrics.h>
 #include <Common/escapeForFileName.h>
@@ -272,12 +273,33 @@ void DatabaseWithOwnTablesBase::attachTableUnlocked(const String & table_name, c
 
     if (table_id.hasUUID())
     {
+        if(table->isView())
+        {
+            ContextPtr context_;
+            if (const auto * mv = dynamic_cast<const StorageMaterializedView *>(table.get()))
+//                if (mv->hasInnerTable())
+            {
+                std::cerr << "TABLE IS MATERIALIZED VIEW >>>>>>>>>>>>>" << table_name << "\n";
+
+            }
+            else
+            {
+                std::cerr << "TABLE IS  >>>>>>>>>>>>>" << table_name << "\n";
+                auto deps = DatabaseCatalog::instance().getReferentialDependents(table->getStorageID());
+                for(const auto & d : deps)
+                {
+                    std::cerr << ">>>>>> ?????? &&&& DEPS ARE" << d.table_name << "\n";
+                }
+            }
+        }
+
         assert(database_name == DatabaseCatalog::TEMPORARY_DATABASE || getUUID() != UUIDHelpers::Nil);
         DatabaseCatalog::instance().addUUIDMapping(table_id.uuid, shared_from_this(), table);
     }
 
     if (!tables.emplace(table_name, table).second)
     {
+
         if (table_id.hasUUID())
             DatabaseCatalog::instance().removeUUIDMapping(table_id.uuid);
         throw Exception(ErrorCodes::TABLE_ALREADY_EXISTS, "Table {} already exists.", table_id.getFullTableName());
