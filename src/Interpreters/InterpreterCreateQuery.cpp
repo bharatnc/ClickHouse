@@ -923,6 +923,26 @@ void InterpreterCreateQuery::validateTableStructure(const ASTCreateQuery & creat
             }
         }
     }
+
+    if(!create.attach)
+    {
+        std::cerr << ">>>>>>>> Here ......... " << "\n";
+        auto object_columns = properties.columns;
+        auto columns_list = properties.columns.getAllPhysical();
+        NamesAndTypesList subcolumns_list;
+        for (auto & column : columns_list)
+        {
+            auto object_column = object_columns.tryGetColumn(GetColumnsOptions::All, column.name);
+            if (object_column)
+            {
+                column.type = object_column->type;
+                auto subcolumns = object_columns.getSubcolumns(column.name);
+                std::cerr << ">>>>>>>> The number of sub columns in " << column.name << " is " << subcolumns.size() << "\n";
+                subcolumns_list.splice(subcolumns_list.end(), subcolumns);
+            }
+        }
+
+    }
     if (!create.attach && !settings.allow_suspicious_fixed_string_types)
     {
         for (const auto & [name, type] : properties.columns.getAllPhysical())

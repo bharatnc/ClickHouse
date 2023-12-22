@@ -412,6 +412,24 @@ BlockIO InterpreterInsertQuery::execute()
 
     auto query_sample_block = getSampleBlock(query, table, metadata_snapshot);
 
+    std::cerr << ">>>>>>>> Here ......... " << "\n";
+    auto object_columns = table->getInMemoryMetadataPtr().get()->columns;
+    auto columns_list = table->getInMemoryMetadataPtr().get()->columns.getAllPhysical();
+    NamesAndTypesList subcolumns_list;
+    for (auto & column : columns_list)
+    {
+        auto object_column = object_columns.tryGetColumn(GetColumnsOptions::All, column.name);
+        if (object_column)
+        {
+//            column.type = object_column->type;
+            auto subcolumns = object_columns.getSubcolumns(column.name);
+            const auto & input_columns = pipeline.getHeader().getColumns();
+
+            std::cerr << ">>>>>>>> The number of sub columns in " << column.name << " is " << subcolumns.size() <<  " input columns size " << input_columns.data()->get()->dumpStructure() << "\n";
+            subcolumns_list.splice(subcolumns_list.end(), subcolumns);
+        }
+    }
+
     /// For table functions we check access while executing
     /// getTable() -> ITableFunction::execute().
     if (!query.table_function)
@@ -518,6 +536,7 @@ BlockIO InterpreterInsertQuery::execute()
             }
 
             pipeline.resize(pre_streams_size);
+
 
             /// Allow to insert Nullable into non-Nullable columns, NULL values will be added as defaults values.
             if (getContext()->getSettingsRef().insert_null_as_default)
