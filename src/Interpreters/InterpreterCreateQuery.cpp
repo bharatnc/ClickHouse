@@ -932,6 +932,11 @@ void InterpreterCreateQuery::validateTableStructure(const ASTCreateQuery & creat
         NamesAndTypesList subcolumns_list;
         for (auto & column : columns_list)
         {
+            std::cerr << "$$$$ SIZE OF SUBCOLUMNS = " << column.type->getSubcolumnNames().size() << "\n";
+            for (const auto & cb : column.type->getSubcolumnNames())
+            {
+                std::cerr << "$$$$$ NAME OF THE SUBCOLUMN IS "  << cb << "\n";
+            }
             auto object_column = object_columns.tryGetColumn(GetColumnsOptions::All, column.name);
             if (object_column)
             {
