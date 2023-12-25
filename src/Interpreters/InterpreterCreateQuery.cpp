@@ -107,6 +107,7 @@ namespace ErrorCodes
     extern const int UNKNOWN_STORAGE;
     extern const int SYNTAX_ERROR;
     extern const int SUPPORT_IS_DISABLED;
+    extern const int LIMIT_EXCEEDED;
 }
 
 namespace fs = std::filesystem;
@@ -909,6 +910,7 @@ void InterpreterCreateQuery::validateTableStructure(const ASTCreateQuery & creat
         }
     }
 
+
     if (!create.attach && !settings.allow_experimental_object_type)
     {
         for (const auto & [name, type] : properties.columns.getAllPhysical())
@@ -1476,6 +1478,24 @@ bool InterpreterCreateQuery::doCreateTable(ASTCreateQuery & create,
 
         /// If schema wes inferred while storage creation, add columns description to create query.
         addColumnsDescriptionToCreateQueryIfNecessary(query_ptr->as<ASTCreateQuery &>(), res);
+    }
+
+    auto columns_list = properties.columns.getAllPhysical();
+    size_t total_subcolumns = 0;
+
+    if (!create.attach)
+    {
+        if (res->storesDataOnDisk())
+        {
+            for (auto & column : columns_list)
+                total_subcolumns += column.type->getSubcolumnNames().size();
+
+            if (total_subcolumns > getContext()->getSettingsRef().max_subcolumns_for_table)
+                throw Exception(
+                    ErrorCodes::LIMIT_EXCEEDED,
+                    "Maximum limit of {} subcolumn(s) for table exceeded",
+                    getContext()->getSettingsRef().max_subcolumns_for_table);
+        }
     }
 
     if (!create.attach && getContext()->getSettingsRef().database_replicated_allow_only_replicated_engine)
