@@ -2,12 +2,15 @@
 #include <base/bit_cast.h>
 
 #include <Columns/ColumnArray.h>
+#include <Columns/ColumnTuple.h>
 #include <Columns/ColumnConst.h>
 #include <Columns/ColumnDecimal.h>
 #include <Columns/ColumnString.h>
 #include <Columns/ColumnNullable.h>
 #include <Core/DecimalFunctions.h>
 #include <DataTypes/DataTypeArray.h>
+#include <DataTypes/DataTypeTuple.h>
+#include <DataTypes/DataTypesNumber.h>
 #include <DataTypes/getLeastSupertype.h>
 #include <Functions/FunctionFactory.h>
 #include <Functions/FunctionHelpers.h>
@@ -92,16 +95,25 @@ namespace
             const auto type_arr_from_nested = type_arr_from->getNestedType();
 
             auto src = tryGetLeastSupertype(DataTypes{type_x, type_arr_from_nested});
-            if (!src
+
+            if(isEnum8(type_x))
+                src = std::make_shared<DataTypeArray>(std::make_shared<DataTypeInt8>());
+
+            if(isEnum16(type_x))
+                src = std::make_shared<DataTypeArray>(std::make_shared<DataTypeInt16>());
+
+            if (!src)
+            {
                 /// Compatibility with previous versions, that allowed even UInt64 with Int64,
                 /// regardless of ambiguous conversions.
-                && !isNativeNumber(type_x) && !isNativeNumber(type_arr_from_nested))
-            {
-                throw Exception(
-                    ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
-                    "First argument and elements of array "
-                    "of the second argument of function {} must have compatible types",
-                    getName());
+                if( !isNativeNumber(type_x) && !isNativeNumber(type_arr_from_nested))
+                {
+                        throw Exception(
+                            ErrorCodes::ILLEGAL_TYPE_OF_ARGUMENT,
+                            "First argument {} and elements of array "
+                            "of the second argument of function {} must have compatible types", type_x.get()->getName(),
+                            getName());
+                }
             }
 
             const DataTypeArray * type_arr_to = checkAndGetDataType<DataTypeArray>(arguments[2].get());
@@ -156,10 +168,24 @@ namespace
         {
             std::call_once(once, [&] { initialize(arguments, result_type); });
 
-            const auto * in = arguments[0].column.get();
+            auto * in = arguments[0].column.get();
+
+            if(isEnum8(arguments[0].type))
+            {
+                in = checkAndGetColumn<ColumnArray>(arguments[0].column.get());
+                std::cerr << ">>>>>>>>>>>>>>> ENUM8 \n";
+            }
+
+            if(isEnum16(arguments[0].type))
+            {
+                in = checkAndGetColumn<ColumnArray>(arguments[0].column.get());
+                std::cerr << ">>>>>>>>>>>>>>> ENUM16 \n";
+            }
 
             if (isColumnConst(*in))
                 return executeConst(arguments, result_type, input_rows_count);
+
+            std::cerr << ">>>>>>>>>> NON const \n";
 
             ColumnPtr default_non_const;
             if (!cache.default_column && arguments.size() == 4)
@@ -175,6 +201,17 @@ namespace
             }
 
             ColumnPtr in_casted = arguments[0].column;
+            if(isEnum8(arguments[0].type))
+            {
+                in_casted = checkAndGetColumn<ColumnVector<Int8>>(arguments[0].column.get())->getPtr();
+                std::cerr << ">>>>>>>>>>>>>>> in casted ENUM8 \n";
+            }
+
+            if(isEnum16(arguments[0].type))
+            {
+                in_casted = checkAndGetColumn<ColumnVector<Int16>>(arguments[0].column.get())->getPtr();
+                std::cerr << ">>>>>>>>>>>>>>> in casted ENUM16 \n";
+            }
             if (arguments.size() == 3)
                 in_casted = castColumn(arguments[0], result_type);
 
@@ -226,6 +263,7 @@ namespace
             ColumnsWithTypeAndName args = arguments;
             args[0].column = args[0].column->cloneResized(input_rows_count)->convertToFullColumnIfConst();
 
+            std::cerr << ">>>>>>>>>> Executing const \n";
             auto impl = FunctionToOverloadResolverAdaptor(std::make_shared<FunctionTransform>()).build(args);
 
             return impl->execute(args, result_type, input_rows_count);
@@ -236,6 +274,7 @@ namespace
             const size_t size = in->size();
             const auto & table = *cache.table_anything_to_idx;
             column_result.reserve(size);
+            std::cerr << ">>>>>>> EXECUTE Anything.... \n";
             for (size_t i = 0; i < size; ++i)
             {
                 SipHash hash;
@@ -258,6 +297,10 @@ namespace
             const size_t size = in->size();
             const auto & table = *cache.table_string_to_idx;
             column_result.reserve(size);
+            std::cerr << ">>>>>>> EXECUTE Cont.... \n";
+
+            std::cerr << "Type is >>>>>>> " << in->getName() << "\n";
+
             for (size_t i = 0; i < size; ++i)
             {
                 const auto * it = table.find(in->getDataAt(i));
@@ -275,6 +318,8 @@ namespace
         template <typename T>
         bool executeNum(const IColumn * in_untyped, IColumn & column_result, const ColumnPtr default_non_const, const IColumn & in_casted) const
         {
+            std::cerr << ">>>>>>> EXECUTE Num.... \n";
+
             const auto * const in = checkAndGetColumn<T>(in_untyped);
             if (!in)
                 return false;
@@ -319,6 +364,8 @@ namespace
         template <typename T>
         bool executeNumToString(const PaddedPODArray<T> & pod, IColumn & column_result, const ColumnPtr default_non_const) const
         {
+            std::cerr << ">>>>>>> EXECUTE String.... \n";
+
             auto * out = typeid_cast<ColumnString *>(&column_result);
             if (!out)
                 return false;
@@ -704,8 +751,13 @@ namespace
         /// Can be called from different threads. It works only on the first call.
         void initialize(const ColumnsWithTypeAndName & arguments, const DataTypePtr & result_type) const
         {
-            const DataTypePtr & from_type = arguments[0].type;
+            DataTypePtr from_type = arguments[0].type;
 
+                if(isEnum8(arguments[0].type))
+                from_type = std::make_shared<DataTypeArray>(std::make_shared<DataTypeInt8>());
+
+            if(isEnum16(arguments[0].type))
+                from_type = std::make_shared<DataTypeArray>(std::make_shared<DataTypeInt16>());
             if (from_type->onlyNull())
             {
                 cache.is_empty = true;
