@@ -57,6 +57,14 @@ def test_drop_wrong_database_name(start):
     node.query("DROP DATABASE test;")
 
 
+def test_wrong_database_engine_name(start):
+    with pytest.raises(
+        QueryRuntimeException,
+        match="DB::Exception: Unknown database engine Atomic123. Maybe you meant: \\['Atomic'\\].",
+    ):
+        node.query("CREATE DATABASE test_atomic ENGINE = Atomic123;")
+
+
 def test_wrong_table_name(start):
     node.query(
         """
