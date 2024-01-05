@@ -43,10 +43,10 @@ namespace
 {
 
 constexpr double PI = std::numbers::pi_v<double>;
-constexpr float PI_F = std::numbers::pi_v<float>;
+constexpr Float64 PI_F = std::numbers::pi_v<Float64>;
 
-constexpr float RAD_IN_DEG = static_cast<float>(PI / 180.0);
-constexpr float RAD_IN_DEG_HALF = static_cast<float>(PI / 360.0);
+constexpr Float64 RAD_IN_DEG = static_cast<Float64>(PI / 180.0);
+constexpr Float64 RAD_IN_DEG_HALF = static_cast<Float64>(PI / 360.0);
 
 constexpr size_t COS_LUT_SIZE = 1024; // maxerr 0.00063%
 constexpr float COS_LUT_SIZE_F = 1024.0f; // maxerr 0.00063%
@@ -104,32 +104,32 @@ void geodistInit()
     }
 }
 
-inline NO_SANITIZE_UNDEFINED size_t floatToIndex(float x)
+inline NO_SANITIZE_UNDEFINED size_t floatToIndex(Float64 x)
 {
     /// Implementation specific behaviour on overflow or infinite value.
     return static_cast<size_t>(x);
 }
 
-inline float geodistDegDiff(float f)
+inline Float64 geodistDegDiff(Float64 f)
 {
-    f = fabsf(f);
+    f = std::abs(f);
     if (f > 180)
         f = 360 - f;
     return f;
 }
 
-inline float geodistFastCos(float x)
+inline Float64 geodistFastCos(Float64 x)
 {
-    float y = fabsf(x) * (COS_LUT_SIZE_F / PI_F / 2.0f);
+    Float64 y = std::abs(x) * (COS_LUT_SIZE_F / PI_F / 2.0f);
     size_t i = floatToIndex(y);
     y -= i;
     i &= (COS_LUT_SIZE - 1);
     return cos_lut[i] + (cos_lut[i + 1] - cos_lut[i]) * y;
 }
 
-inline float geodistFastSin(float x)
+inline Float64 geodistFastSin(Float64 x)
 {
-    float y = fabsf(x) * (COS_LUT_SIZE_F / PI_F / 2.0f);
+    Float64 y = std::abs(x) * (COS_LUT_SIZE_F / PI_F / 2.0f);
     size_t i = floatToIndex(y);
     y -= i;
     i = (i - COS_LUT_SIZE / 4) & (COS_LUT_SIZE - 1); // cos(x - pi / 2) = sin(x), costable / 4 = pi / 2
@@ -138,12 +138,12 @@ inline float geodistFastSin(float x)
 
 /// fast implementation of asin(sqrt(x))
 /// max error in floats 0.00369%, in doubles 0.00072%
-inline float geodistFastAsinSqrt(float x)
+inline Float64 geodistFastAsinSqrt(Float64 x)
 {
     if (x < 0.122f)
     {
         // distance under 4546 km, Taylor error under 0.00072%
-        float y = sqrtf(x);
+        Float64 y = sqrt(x);
         return y + x * y * 0.166666666666666f + x * x * y * 0.075f + x * x * x * y * 0.044642857142857f;
     }
     if (x < 0.948f)
@@ -153,7 +153,7 @@ inline float geodistFastAsinSqrt(float x)
         size_t i = floatToIndex(x);
         return asin_sqrt_lut[i] + (asin_sqrt_lut[i + 1] - asin_sqrt_lut[i]) * (x - i);
     }
-    return asinf(sqrtf(x)); // distance over 17083 km, just compute exact
+    return asin(sqrt(x)); // distance over 17083 km, just compute exact
 }
 
 
@@ -172,10 +172,10 @@ namespace
 {
 
 template <Method method>
-float distance(float lon1deg, float lat1deg, float lon2deg, float lat2deg)
+Float64 distance(Float64 lon1deg, Float64 lat1deg, Float64 lon2deg, Float64 lat2deg)
 {
-    float lat_diff = geodistDegDiff(lat1deg - lat2deg);
-    float lon_diff = geodistDegDiff(lon1deg - lon2deg);
+    Float64 lat_diff = geodistDegDiff(lat1deg - lat2deg);
+    Float64 lon_diff = geodistDegDiff(lon1deg - lon2deg);
 
     if (lon_diff < 13)
     {
@@ -187,13 +187,13 @@ float distance(float lon1deg, float lat1deg, float lon2deg, float lat2deg)
         ///  (Remember how a plane flies from Amsterdam to New York)
         /// But if longitude is close but latitude is different enough, there is no difference between meridian and great circle line.
 
-        float latitude_midpoint = (lat1deg + lat2deg + 180) * METRIC_LUT_SIZE / 360; // [-90, 90] degrees -> [0, METRIC_LUT_SIZE] indexes
-        size_t latitude_midpoint_index = floatToIndex(latitude_midpoint) & (METRIC_LUT_SIZE - 1);
+        Float64 latitude_midpoint = (lat1deg + lat2deg + 180) * METRIC_LUT_SIZE / 360; // [-90, 90] degrees -> [0, METRIC_LUT_SIZE] indexes
+        size_t latitude_midpoint_index = floatToIndex(static_cast<float>(latitude_midpoint)) & (METRIC_LUT_SIZE - 1);
 
         /// This is linear interpolation between two table items at index "latitude_midpoint_index" and "latitude_midpoint_index + 1".
 
-        float k_lat{};
-        float k_lon{};
+        Float64 k_lat{};
+        Float64 k_lon{};
 
         if constexpr (method == Method::SPHERE_DEGREES)
         {
@@ -204,7 +204,7 @@ float distance(float lon1deg, float lat1deg, float lon2deg, float lat2deg)
         }
         else if constexpr (method == Method::SPHERE_METERS)
         {
-            k_lat = sqrf(EARTH_DIAMETER * PI_F / 360.0f);
+            k_lat = sqr(EARTH_DIAMETER * PI_F / 360.0f);
 
             k_lon = sphere_metric_meters_lut[latitude_midpoint_index]
                 + (sphere_metric_meters_lut[latitude_midpoint_index + 1] - sphere_metric_meters_lut[latitude_midpoint_index]) * (latitude_midpoint - latitude_midpoint_index);
@@ -219,14 +219,14 @@ float distance(float lon1deg, float lat1deg, float lon2deg, float lat2deg)
         }
 
         /// Metric on a tangent plane: it differs from Euclidean metric only by scale of coordinates.
-        return sqrtf(k_lat * lat_diff * lat_diff + k_lon * lon_diff * lon_diff);
+        return sqrt(k_lat * lat_diff * lat_diff + k_lon * lon_diff * lon_diff);
     }
     else
     {
         // points too far away; use haversine
 
-        float a = sqrf(geodistFastSin(lat_diff * RAD_IN_DEG_HALF))
-            + geodistFastCos(lat1deg * RAD_IN_DEG) * geodistFastCos(lat2deg * RAD_IN_DEG) * sqrf(geodistFastSin(lon_diff * RAD_IN_DEG_HALF));
+        Float64 a = sqrf(static_cast<float>(geodistFastSin(lat_diff * RAD_IN_DEG_HALF)))
+            + geodistFastCos(lat1deg * RAD_IN_DEG) * geodistFastCos(lat2deg * RAD_IN_DEG) * sqrf(static_cast<float>(geodistFastSin(lon_diff * RAD_IN_DEG_HALF)));
 
         if constexpr (method == Method::SPHERE_DEGREES)
             return (360.0f / PI_F) * geodistFastAsinSqrt(a);
@@ -263,12 +263,12 @@ private:
                     "Must be numeric", arg->getName(), std::to_string(arg_idx + 1), getName());
         }
 
-        return std::make_shared<DataTypeFloat32>();
+        return std::make_shared<DataTypeFloat64>();
     }
 
     ColumnPtr executeImpl(const ColumnsWithTypeAndName & arguments, const DataTypePtr & result_type, size_t input_rows_count) const override
     {
-        auto dst = ColumnVector<Float32>::create();
+        auto dst = ColumnVector<Float64>::create();
         auto & dst_data = dst->getData();
         dst_data.resize(input_rows_count);
 
@@ -280,28 +280,30 @@ private:
             argument.type = result_type;
         }
 
-        const auto * col_lon1 = convertArgumentColumnToFloat32(arguments_copy, 0);
-        const auto * col_lat1 = convertArgumentColumnToFloat32(arguments_copy, 1);
-        const auto * col_lon2 = convertArgumentColumnToFloat32(arguments_copy, 2);
-        const auto * col_lat2 = convertArgumentColumnToFloat32(arguments_copy, 3);
+        const auto * col_lon1 = convertArgumentColumnToFloat64(arguments_copy, 0);
+        const auto * col_lat1 = convertArgumentColumnToFloat64(arguments_copy, 1);
+        const auto * col_lon2 = convertArgumentColumnToFloat64(arguments_copy, 2);
+        const auto * col_lat2 = convertArgumentColumnToFloat64(arguments_copy, 3);
 
         for (size_t row_num = 0; row_num < input_rows_count; ++row_num)
         {
             dst_data[row_num] = distance<method>(
-                col_lon1->getData()[row_num], col_lat1->getData()[row_num],
-                col_lon2->getData()[row_num], col_lat2->getData()[row_num]);
+                col_lon1->getData()[row_num],
+                col_lat1->getData()[row_num],
+                col_lon2->getData()[row_num],
+                col_lat2->getData()[row_num]);
         }
 
         return dst;
     }
 
-    const ColumnFloat32 * convertArgumentColumnToFloat32(const ColumnsWithTypeAndName & arguments, size_t argument_index) const
+    const ColumnFloat64 * convertArgumentColumnToFloat64(const ColumnsWithTypeAndName & arguments, size_t argument_index) const
     {
-        const auto * column_typed = checkAndGetColumn<ColumnFloat32>(arguments[argument_index].column.get());
+        const auto * column_typed = checkAndGetColumn<ColumnFloat64>(arguments[argument_index].column.get());
         if (!column_typed)
             throw Exception(
                     ErrorCodes::ILLEGAL_COLUMN,
-                    "Illegal type {} of argument {} of function {}. Must be Float32.",
+                    "Illegal type {} of argument {} of function {}. Must be Float64.",
                     arguments[argument_index].type->getName(),
                     argument_index + 1,
                     getName());
