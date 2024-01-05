@@ -255,6 +255,8 @@
     M(ActiveTimersInQueryProfiler, "Number of Active thread local timers in QueryProfiler") \
     M(RefreshableViews, "Number materialized views with periodic refreshing (REFRESH)") \
     M(RefreshingViews, "Number of materialized views currently executing a refresh") \
+    M(TotalConsumptionByPrimaryKeyBytesInMemory, "Total amount of bytes used by the primary keys in memory") \
+    M(TotalConsumptionByPrimaryKeyBytesInMemoryAllocated, "Total amount of bytes reserved for primary keys in memory") \
 
 #ifdef APPLY_FOR_EXTERNAL_METRICS
     #define APPLY_FOR_METRICS(M) APPLY_FOR_BUILTIN_METRICS(M) APPLY_FOR_EXTERNAL_METRICS(M)

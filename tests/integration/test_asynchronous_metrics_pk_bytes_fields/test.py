@@ -61,9 +61,9 @@ def test_total_pk_bytes_in_memory_fields(started_cluster):
     ORDER BY a SETTINGS index_granularity=1"""
     node.query(query_create)
 
-    query_pk_bytes = "SELECT value FROM system.asynchronous_metrics WHERE metric = 'TotalPrimaryKeyBytesInMemory';"
-    query_pk_bytes_allocated = """SELECT value FROM system.asynchronous_metrics 
-                                  WHERE metric = 'TotalPrimaryKeyBytesInMemoryAllocated';"""
+    query_pk_bytes = "SELECT value FROM system.metrics WHERE metric = 'TotalConsumptionByPrimaryKeyBytesInMemory';"
+    query_pk_bytes_allocated = """SELECT value FROM system.metrics 
+                                  WHERE metric = 'TotalConsumptionByPrimaryKeyBytesInMemoryAllocated';"""
 
     # query for metrics before inserting anything into the table
     pk_bytes_before = int(node.query(query_pk_bytes).strip())
