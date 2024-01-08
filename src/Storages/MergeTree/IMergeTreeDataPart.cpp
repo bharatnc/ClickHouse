@@ -271,22 +271,16 @@ void IMergeTreeDataPart::decrementStateMetric(MergeTreeDataPartState state_) con
     }
 }
 
-void IMergeTreeDataPart::incrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartType /*type*/) const
+void IMergeTreeDataPart::incrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartState /*state_*/, MergeTreeDataPartType /*type_*/) const
 {
-//    if (type.getValue() == MergeTreeDataPartType::InMemory)
-    {
         CurrentMetrics::add(CurrentMetrics::TotalConsumptionByPrimaryKeyBytesInMemory, getIndexSizeInBytes());
         CurrentMetrics::add(CurrentMetrics::TotalConsumptionByPrimaryKeyBytesInMemoryAllocated, getIndexSizeInAllocatedBytes());
-    }
 }
 
-void IMergeTreeDataPart::decrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartType /*type*/) const
+void IMergeTreeDataPart::decrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartState /*state_*/, MergeTreeDataPartType /*type_*/) const
 {
-//    if (type.getValue() == MergeTreeDataPartType::InMemory)
-    {
         CurrentMetrics::sub(CurrentMetrics::TotalConsumptionByPrimaryKeyBytesInMemory, getIndexSizeInBytes());
         CurrentMetrics::sub(CurrentMetrics::TotalConsumptionByPrimaryKeyBytesInMemoryAllocated, getIndexSizeInAllocatedBytes());
-    }
 }
 
 static void incrementTypeMetric(MergeTreeDataPartType type)
@@ -361,7 +355,6 @@ IMergeTreeDataPart::~IMergeTreeDataPart()
 {
     decrementStateMetric(state);
     decrementTypeMetric(part_type);
-//    decrementTotalPrimaryKeyBytesMetric(part_type);
 }
 
 void IMergeTreeDataPart::setName(const String & new_name)
@@ -847,7 +840,6 @@ void IMergeTreeDataPart::loadIndex()
 
         index.assign(std::make_move_iterator(loaded_index.begin()), std::make_move_iterator(loaded_index.end()));
     }
-    incrementTotalPrimaryKeyBytesMetric(part_type);
 }
 
 void IMergeTreeDataPart::appendFilesOfIndex(Strings & files) const
@@ -1782,7 +1774,7 @@ void IMergeTreeDataPart::remove()
 
     bool is_temporary_part = is_temp || state == MergeTreeDataPartState::Temporary;
     getDataPartStorage().remove(std::move(can_remove_callback), checksums, projection_checksums, is_temporary_part, storage.log);
-    decrementTotalPrimaryKeyBytesMetric(getType());
+//    decrementTotalPrimaryKeyBytesMetric(state, part_type);
 }
 
 std::optional<String> IMergeTreeDataPart::getRelativePathForPrefix(const String & prefix, bool detached, bool broken) const

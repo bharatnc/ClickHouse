@@ -1287,6 +1287,7 @@ MergeTreeData::LoadPartResult MergeTreeData::loadDataPart(
                 .withPartStorageType(MergeTreeDataPartStorageType::Full)
                 .withPartType(MergeTreeDataPartType::Wide)
                 .build();
+            res.part->incrementTotalPrimaryKeyBytesMetric(res.part->getState(), res.part->getType());
         }
 
         res.is_broken = true;
@@ -1328,6 +1329,8 @@ MergeTreeData::LoadPartResult MergeTreeData::loadDataPart(
 
         auto part_size_str = res.size_of_part ? formatReadableSizeWithBinarySuffix(*res.size_of_part) : "failed to calculate size";
 
+        res.part->incrementTotalPrimaryKeyBytesMetric(res.part->getState(), res.part->getType());
+
         LOG_WARNING(log,
             "Detaching stale part {} (size: {}), which should have been deleted after a move. "
             "That can only happen after unclean restart of ClickHouse after move of a part having an operation blocking that stale copy of part.",
@@ -1349,6 +1352,8 @@ MergeTreeData::LoadPartResult MergeTreeData::loadDataPart(
         mark_broken();
         return res;
     }
+
+    res.part->incrementTotalPrimaryKeyBytesMetric(res.part->getState(), res.part->getType());
 
     res.part->modification_time = part_disk_ptr->getLastModified(fs::path(relative_data_path) / part_name).epochTime();
     res.part->loadVersionMetadata();
@@ -1416,6 +1421,7 @@ MergeTreeData::LoadPartResult MergeTreeData::loadDataPart(
     }
 
     res.part->setState(to_state);
+    res.part->incrementTotalPrimaryKeyBytesMetric(res.part->getState(), res.part->getType());
 
     DataPartIteratorByInfo it;
     bool inserted;
@@ -1578,6 +1584,8 @@ std::vector<MergeTreeData::LoadPartResult> MergeTreeData::loadDataPartsFromDisk(
                         loading_parts_max_backoff_ms, loading_parts_max_tries);
 
                     part->is_loaded = true;
+//                    res.part->incrementTotalPrimaryKeyBytesMetric(res.part->getState(), res.part->getType());
+
                     bool is_active_part = res.part->getState() == DataPartState::Active;
 
                     /// If part is broken or duplicate or should be removed according to transaction
@@ -2370,6 +2378,8 @@ void MergeTreeData::removePartsFinally(const MergeTreeData::DataPartsVector & pa
             part_log_elem.part_type = part->getType();
 
             part_log->add(part_log_elem);
+//            part->decrementTotalPrimaryKeyBytesMetric(part->getState(), part->getType());
+
         }
     }
 }
@@ -4273,7 +4283,8 @@ bool MergeTreeData::tryRemovePartImmediately(DataPartPtr && part)
         rollbackDeletingParts({part_to_delete});
         throw;
     }
-
+    /// TODO: do this after removing
+    part_to_delete->decrementTotalPrimaryKeyBytesMetric(part_to_delete->getState(), part_to_delete->getType());
     removePartsFinally({part_to_delete});
     LOG_TRACE(log, "Removed part {}", part_to_delete->name);
     return true;

@@ -284,6 +284,9 @@ public:
     void setState(MergeTreeDataPartState new_state) const;
     ALWAYS_INLINE MergeTreeDataPartState getState() const { return state; }
 
+    void incrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartState state, MergeTreeDataPartType type) const;
+    void decrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartState state, MergeTreeDataPartType type) const;
+
     static constexpr std::string_view stateString(MergeTreeDataPartState state) { return magic_enum::enum_name(state); }
     constexpr std::string_view stateString() const { return stateString(state); }
 
@@ -692,9 +695,6 @@ private:
 
     void incrementStateMetric(MergeTreeDataPartState state) const;
     void decrementStateMetric(MergeTreeDataPartState state) const;
-
-    void incrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartType type) const;
-    void decrementTotalPrimaryKeyBytesMetric(MergeTreeDataPartType type) const;
 
     /// This ugly flag is needed for debug assertions only
     mutable bool part_is_probably_removed_from_disk = false;
