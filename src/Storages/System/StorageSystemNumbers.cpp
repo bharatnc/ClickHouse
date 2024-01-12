@@ -1,3 +1,4 @@
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemNumbers.h>
 
 #include <mutex>
@@ -37,4 +38,12 @@ void StorageSystemNumbers::read(
         column_names, shared_from_this(), storage_snapshot, query_info, std::move(context), max_block_size, num_streams));
 }
 
+void registerStorageSystemNumbers(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemNumbers>(args.table_id, args.multi_threaded, args.limit, args.offset);
+    };
+    factory.registerSystemStorage("StorageSystemNumbers", create_fn);
+}
 }

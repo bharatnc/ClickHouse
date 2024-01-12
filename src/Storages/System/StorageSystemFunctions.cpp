@@ -6,10 +6,10 @@
 #include <DataTypes/DataTypeEnum.h>
 #include <Parsers/queryToString.h>
 #include <Functions/FunctionFactory.h>
-#include <Functions/IFunction.h>
 #include <Interpreters/Context.h>
 #include <Functions/UserDefined/UserDefinedSQLFunctionFactory.h>
 #include <Functions/UserDefined/UserDefinedExecutableFunctionFactory.h>
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemFunctions.h>
 
 
@@ -195,4 +195,12 @@ void StorageSystemFunctions::restoreDataFromBackup(RestorerFromBackup & restorer
     UserDefinedSQLFunctionFactory::instance().restore(restorer, data_path_in_backup);
 }
 
+void registerStorageSystemFunctions(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemFunctions>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemFunctions", create_fn);
+}
 }

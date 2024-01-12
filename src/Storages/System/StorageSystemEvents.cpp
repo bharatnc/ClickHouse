@@ -2,6 +2,7 @@
 #include <Interpreters/Context.h>
 #include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypesNumber.h>
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemEvents.h>
 
 namespace DB
@@ -38,4 +39,12 @@ void StorageSystemEvents::fillData(MutableColumns & res_columns, ContextPtr cont
     }
 }
 
+void registerStorageSystemEvents(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemEvents>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemEvents", create_fn);
+}
 }

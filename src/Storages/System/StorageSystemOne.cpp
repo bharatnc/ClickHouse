@@ -1,10 +1,10 @@
 #include <Common/Exception.h>
 
-#include <Columns/ColumnsNumber.h>
 #include <DataTypes/DataTypesNumber.h>
-#include <Storages/System/StorageSystemOne.h>
 #include <Processors/Sources/SourceFromSingleChunk.h>
 #include <QueryPipeline/Pipe.h>
+#include <Storages/System/StorageSystemFactory.h>
+#include <Storages/System/StorageSystemOne.h>
 
 
 namespace DB
@@ -42,5 +42,12 @@ Pipe StorageSystemOne::read(
     return Pipe(std::make_shared<SourceFromSingleChunk>(std::move(header), std::move(chunk)));
 }
 
-
+void registerStorageSystemOne(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemOne>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemOne", create_fn);
+}
 }

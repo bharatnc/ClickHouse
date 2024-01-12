@@ -4,6 +4,7 @@
 #include <Interpreters/Context.h>
 #include <Interpreters/formatWithPossiblyHidingSecrets.h>
 #include <Access/ContextAccess.h>
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemDatabases.h>
 #include <Storages/SelectQueryInfo.h>
 #include <Storages/VirtualColumnUtils.h>
@@ -138,4 +139,12 @@ void StorageSystemDatabases::fillData(MutableColumns & res_columns, ContextPtr c
    }
 }
 
+void registerStorageSystemDatabases(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemDatabases>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemDatabases", create_fn);
+}
 }

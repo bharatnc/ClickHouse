@@ -9,6 +9,7 @@
 #include <Interpreters/ProcessList.h>
 #include <Storages/MarkCache.h>
 #include <Storages/MergeTree/MergeTreeBackgroundExecutor.h>
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemServerSettings.h>
 
 
@@ -112,4 +113,12 @@ void StorageSystemServerSettings::fillData(MutableColumns & res_columns, Context
     }
 }
 
+void registerStorageSystemServerSettings(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemServerSettings>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemServerSettings", create_fn);
+}
 }

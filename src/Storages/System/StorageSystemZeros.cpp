@@ -1,3 +1,4 @@
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemZeros.h>
 
 #include <Processors/ISource.h>
@@ -132,4 +133,12 @@ Pipe StorageSystemZeros::read(
     return res;
 }
 
+void registerStorageSystemZeros(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemZeros>(args.table_id, args.multi_threaded, args.limit);
+    };
+    factory.registerSystemStorage("StorageSystemZeros", create_fn);
+}
 }

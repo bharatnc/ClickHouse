@@ -1,3 +1,4 @@
+#include <Storages/System/StorageSystemFactory.h>
 #include <Storages/System/StorageSystemSettings.h>
 #include <DataTypes/DataTypeString.h>
 #include <DataTypes/DataTypeNullable.h>
@@ -76,4 +77,12 @@ void StorageSystemSettings::fillData(MutableColumns & res_columns, ContextPtr co
     }
 }
 
+void registerStorageSystemSettings(StorageSystemFactory & factory)
+{
+    auto create_fn = [](const StorageSystemFactory::Arguments & args)
+    {
+        return std::make_shared<StorageSystemSettings>(args.table_id);
+    };
+    factory.registerSystemStorage("StorageSystemSettings", create_fn);
+}
 }
